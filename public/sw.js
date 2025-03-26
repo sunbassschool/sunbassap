@@ -42,11 +42,12 @@ self.addEventListener("activate", (event) => {
 });
 
 // 🌐 Interception des requêtes
+// 🌐 Interception des requêtes
 self.addEventListener("fetch", (event) => {
   const url = event.request.url;
 
-  // 🔄 Ignorer les requêtes vers l'API (Google Apps Script et Proxy CORS)
-  if (url.includes("script.google.com") || url.includes("cors-proxy")) {
+  // 🔄 Ignorer les requêtes vers l'API (Google Apps Script, Proxy CORS, et refresh token)
+  if (url.includes("script.google.com") || url.includes("cors-proxy") || url.includes("refreshToken")) {
     console.log("🚀 Requête API ignorée :", url);
     return;
   }
@@ -65,3 +66,29 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+async function refreshJWTInBackground() {
+  const refreshToken = await getRefreshTokenFromDB();
+  if (!refreshToken) return;
+
+  const response = await fetch(`/refresh?token=${refreshToken}`);
+  const data = await response.json();
+
+  if (data.jwt) {
+      const db = await openDB("AuthDB", 1);
+      const tx = db.transaction("authStore", "readwrite");
+      const store = tx.objectStore("authStore");
+
+      await store.put({ key: "jwt", value: data.jwt });
+      await store.put({ key: "refreshToken", value: data.refreshToken });
+
+      console.log("✅ JWT rafraîchi en arrière-plan !");
+  }
+}
+
+self.addEventListener("periodicsync", async (event) => {
+  if (event.tag === "refresh-jwt") {
+      event.waitUntil(refreshJWTInBackground());
+  }
+});
+
+

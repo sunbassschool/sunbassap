@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <script>
+      document.addEventListener('gesturestart', function (e) {
+        e.preventDefault();
+      });
+      
+      document.addEventListener('touchmove', function (e) {
+        if (e.touches.length > 1) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+    </script>
+
+    <title>SunBassAPP</title>
+
+    <!-- Icône favicon -->
+    <link rel="icon" href="/favicon.ico">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/src/assets/main.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <!-- Manifest PWA -->
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- Mode PWA et icônes Apple -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/app/logo-180x180.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/app/logo-192x192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/app/logo-512x512.png">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Correction de la redirection sur iOS -->
+    <meta name="apple-mobile-web-app-title" content="SunBassSchool">
+    <meta name="apple-touch-startup-image" content="/app/logo-512x512.png">
+  </head>
+  
+  <body>
+    <!-- ✅ Écran de chargement propre et unique -->
+    <div id="loading-screen">
+      <div class="loading-content">
+        <div id="sw-update-toast" style="display:none; position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 12px 16px; border-radius: 6px; z-index: 10000;">
+          🚀 Nouvelle version disponible ! <button id="sw-reload-btn" style="margin-left:10px;">Recharger</button>
+        </div>
+        
+        <img id="loading-logo" src="/images/logo.png" alt="Chargement..." />
+        <button id="install-pwa-btn" style="margin-top: 15px; padding: 8px 15px; font-size: 14px; border: none; border-radius: 6px; background: #f1c40f; color: black; font-weight: bold; cursor: pointer; display: none;">
+          📲 Installer SunBassAPP
+        </button>
+        <div class="loading-container">
+          <div class="loading-bar"></div>
+        </div>
+        <div id="music-quote" class="quote"></div>
+        <button id="go-button" style="margin-top: 25px; padding: 10px 20px; font-size: 18px; border-radius: 6px; font-weight: bold; background: #f1c40f; color: black; cursor: pointer;">
+          🚀 GO
+        </button> <!-- ← Quote dynamique ici -->
+      </div>
+    </div>
+    
+    </div>
+
+    <!-- ✅ L'application Vue se monte ici -->
+    <div id="app"></div>
+
+    <!-- <script type="module" src="/src/main.ts"></script> -->
+
+    <script>
+      const refreshing = sessionStorage.getItem("refreshInProgress");
+      if (refreshing === "true") {
+        const msg = document.createElement("div");
+        msg.innerText = "🔄 Reconnexion en cours...";
+        msg.className = "reconnect-message";
+        document.querySelector("#loading-screen")?.appendChild(msg);
+    
+        // ➕ Animation sur le logo
+        document.getElementById("loading-logo")?.classList.add("spin");
+      }
+      const quotes = [
+    "🎶 \"La basse ancre le rythme et redéfinit les harmonies.\" – James Jamerson",
+    "🎸 \"Il y a tellement plus que de jouer les notes. Quand vous jouez, vous jouez la vie.\" – Jaco Pastorius",
+    "🔊 \"La basse, c'est l'endroit où le funk réside.\" – Bootsy Collins",
+    "🎵 \"La basse est l'instrument qui fait bouger les gens.\" – Marcus Miller",
+    "🥁 \"La batterie, c'est le rythme cardiaque, la basse c'est l'épine dorsale.\" – Aston Barrett",
+    "🎼 \"Toutes les notes sont justes.\" – Victor Wooten",
+    "🧠 \"Mon objectif a toujours été de faire chanter la basse.\" – Chris Squire",
+    "🎧 \"La basse est l'âme invisible qui fait vibrer le cœur de la musique.\" – Rick Danko",
+    "🔥 \"Ce n’est pas vous qui choisissez la basse, c’est la basse qui vous choisit.\" – Thundercat",
+    "🎤 \"La musique idéale est le silence, mais le musicien encadre cette perfection.\" – Sting",
+    "🕶️ \"La basse est l'épine dorsale de la musique.\" – Jean-Jacques Burnel",
+    "🎯 \"Je suis un bassiste et aucune machine ne me surpassera sur mon instrument.\" – Anthony Jackson",
+    "🎚️ \"Servir la chanson. Enlever le superflu. Jouer juste ce qu'il faut.\" – Gail Ann Dorsey",
+    "🎻 \"Je pense toujours une ligne de basse comme une mélodie.\" – Guy Delacroix",
+    "🎙️ \"Nous étions la meilleure section rythmique du monde.\" – John Paul Jones",
+    "🎸 \"Le slap, c'est comme ajouter du funk à la basse.\" – Larry Graham",
+    "💡 \"Je suis un bassiste attaché au côté fondation de la rythmique.\" – Mike Porcaro",
+    "📀 \"Le compresseur est l’effet le plus important pour une basse propre.\" – Billy Sheehan",
+    "🧩 \"La basse relie le rythme à l'harmonie.\" – John Entwistle",
+    "🚀 \"Tu n’es pas obligé de jouer juste la fondamentale.\" – Paul McCartney",
+    "🎸 \"It's not the notes you play, it's the notes you don't play.\" – Victor Wooten",
+    "🧠 \"The groove is more important than the notes.\" – Marcus Miller",
+    "🔥 \"A bass player has to think like a drummer.\" – Jaco Pastorius",
+    "🎵 \"Keep it simple and groove hard.\" – Pino Palladino",
+    "🎶 \"I don’t play bass, I play rhythm.\" – Bootsy Collins",
+    "🔊 \"Space is the place for bass.\" – Thundercat",
+    "🎼 \"Feel the music, don’t just play it.\" – Larry Graham",
+    "🧡 \"I don’t solo a lot. I groove.\" – Carol Kaye",
+    "🎧 \"Bass is the bridge between harmony and rhythm.\" – Esperanza Spalding",
+    "🥁 \"Play with intention, not repetition.\" – Tony Levin",
+    "🎤 \"You don’t have to be flashy to be effective.\" – James Jamerson",
+    "💡 \"Listen more than you play.\" – Paul McCartney",
+    "🎷 \"Respect the pocket.\" – Nathan East",
+    "🔁 \"Good bass is like a good mattress: you don’t notice it until it’s gone.\" – Unknown",
+    "🌀 \"Play for the song, not for yourself.\" – Tal Wilkenfeld",
+    "🎯 \"Solid timing is your greatest superpower.\" – Adam Neely",
+    "🌌 \"Bass makes the music breathe.\" – Richard Bona",
+    "💥 \"Never underestimate the power of a good root note.\" – Flea",
+    "🎻 \"Bass is the spine of the groove.\" – Rocco Prestia",
+    "🚀 \"Groove like your life depends on it.\" – Verdine White"
+  ];
+  function typeWriter(text, element, speed = 55, onComplete = null) {
+  let i = 0;
+  function type() {
+    if (i < text.length) {
+      element.innerHTML += text.charAt(i);
+      i++;
+      setTimeout(type, speed);
+    } else if (onComplete) {
+      setTimeout(() => {
+        element.classList.add("fade-out");
+      }, 2000); // Delay before fading out
+    }
+  }
+  type();
+}
+
+const quoteEl = document.getElementById("music-quote");
+if (quoteEl) {
+  const randomIndex = Math.floor(Math.random() * quotes.length);
+  typeWriter(quotes[randomIndex], quoteEl, 55, () => {
+    console.log("✌️ Citation animée terminée !");
+  });
+}
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const installBtn = document.getElementById('install-pwa-btn');
+  if (installBtn) {
+    installBtn.style.display = 'inline-block';
+    installBtn.addEventListener('click', () => {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('✅ App installée !');
+        } else {
+          console.log('❌ Installation refusée');
+        }
+        deferredPrompt = null;
+        installBtn.style.display = 'none';
+      });
+    });
+  }
+});
+document.getElementById("go-button")?.addEventListener("click", () => {
+  document.getElementById("loading-screen")?.remove(); // On cache l'écran d'attente
+  const appScript = document.createElement("script");
+  appScript.type = "module";
+  appScript.src = "/src/main.ts";
+  document.body.appendChild(appScript);
+});
+    </script>
+  </body>
+</html>
+
+
+<style>
+  #app {
+  display: none; /* caché au départ */
+}
+  .fade-out {
+  animation: fadeOut 1.5s ease-out forwards;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+  .quote {
+  color: white;
+  font-size: 14px;
+  font-style: italic;
+  margin-top: 20px;
+  text-align: center;
+  font-family: 'Poppins', sans-serif;
+  max-width: 240px;
+  animation: fadeIn 1.5s ease-out forwards;
+  opacity: 0;
+}
+  /* ✨ Style du message "Reconnexion en cours..." */
+.reconnect-message {
+  margin-top: 25px;
+  color: #ffae42; /* Orange lumineux */
+  font-size: 18px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  animation: fadeIn 0.5s ease-out forwards, pulseGlow 2s ease-in-out infinite;
+  text-shadow: 0 0 5px #000;
+}
+
+@keyframes pulseGlow {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+body {
+  background: black !important;
+  margin: 0;
+  padding: 0;
+}
+
+
+/* ✅ Fond noir et centrage */
+/* ✅ Fond noir couvrant tout l'écran */
+#loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  flex-direction: column;
+}
+
+/* ✅ Conteneur du logo + barre */
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+/* ✅ Logo bien visible */
+#loading-logo {
+  width: 80px;
+  max-width: 80px;
+  height: auto;
+  opacity: 0;
+  animation: fadeIn 0.3s ease-in-out forwards, spin 2s linear infinite;
+  transition: all 0.3s ease-out;
+  display: block; /* évite les comportements inline-img bizarres */
+  max-height: 80px;
+
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+#loading-logo.spin {
+  animation: spin 1.8s linear infinite, fadeIn 0.3s ease-in-out forwards;
+}
+
+
+/* ✅ Conteneur de la barre */
+.loading-container {
+  width: 180px; /* Largeur moyenne */
+  height: 8px;
+  border: 2px solid rgba(27, 27, 27, 0.829);
+  border-radius: 5px;
+  overflow: hidden;
+  position: relative;
+}
+
+.loading-bar {
+  height: 100%;
+  width: 0%;
+  background: rgb(255, 38, 0);
+  animation: fill-progress 5s ease-out forwards;
+}
+
+@keyframes fill-progress {
+  0% { width: 0%; }
+  10% { width: 10%; }
+  25% { width: 30%; }
+  45% { width: 50%; }
+  65% { width: 65%; }
+  80% { width: 80%; }
+  90% { width: 95%; }
+  100% { width: 100%; }
+}
+
+
+
+/* ✅ Animation d’apparition du logo */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+
+
+
+</style>

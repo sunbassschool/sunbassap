@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <style>
+      html, body {
+        background: #000 !important;
+      }
+    </style>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <script>
+      document.addEventListener('gesturestart', function (e) {
+        e.preventDefault();
+      });
+
+      document.addEventListener('touchmove', function (e) {
+        if (e.touches.length > 1) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+    </script>
+
+    <title>SunBassAPP</title>
+
+    <!-- Icône favicon -->
+    <link rel="icon" href="/favicon.ico">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/src/assets/main.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <!-- Manifest PWA -->
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- Mode PWA et icônes Apple -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/app/logo-180x180.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="/app/logo-192x192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/app/logo-512x512.png">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Correction de la redirection sur iOS -->
+    <meta name="apple-mobile-web-app-title" content="SunBassSchool">
+    <meta name="apple-touch-startup-image" content="/app/logo-512x512.png">
+  </head>
+  
+  <body>
+    <div id="app" style="background-color:black;"></div>
+<!-- ✅ Écran de reconnexion pendant le refresh token -->
+<div id="reconnecting-overlay" style="
+display: none;
+position: fixed;
+top: 0;
+left: 0;
+width: 100vw;
+height: 100vh;
+background: rgba(0, 0, 0, 0.92);
+color: rgb(255, 0, 0);
+font-size: 16px;
+font-family: 'Poppins', sans-serif;
+z-index: 10001;
+align-items: center;
+justify-content: center;
+flex-direction: column;
+text-align: center;
+display: flex;
+">
+<div style="animation: fadeIn 1s ease-out;">
+  🔄 Reconnexion en cours…<br><br>
+  <div class="loader"></div>
+
+  <span style="font-size: 13px; opacity: 0.7;">Merci de patienter</span>
+</div>
+</div>
+    <!-- ✅ Écran de chargement propre et unique -->
+    <div id="loading-screen">
+      
+
+      <div class="loading-content">
+        <div id="sw-update-toast" style="display:none; position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 12px 16px; border-radius: 6px; z-index: 10000;">
+          🚀 Nouvelle version disponible ! <button id="sw-reload-btn" style="margin-left:10px;">Recharger</button>
+        </div>
+        
+        <img id="loading-logo" src="/images/logo.png" alt="Chargement..." />
+        <button id="install-pwa-btn" style="margin-top: 15px; padding: 8px 15px; font-size: 14px; border: none; border-radius: 6px; background: #f1c40f; color: black; font-weight: bold; cursor: pointer; display: none;">
+          📲 Installer SunBassAPP
+        </button>
+        <div class="loading-container">
+          <div class="loading-bar"></div>
+        </div>
+        <div id="music-quote" class="quote"></div>
+        <button id="go-button" class="go-button hidden">
+          commencer le cours
+        </button>
+      </div>
+    </div>
+
+    <!-- ✅ L'application Vue se monte ici -->
+    <div id="app"></div>
+
+    <script type="module">
+      import initializeApp from '/src/main.ts';
+    
+      const refreshing = sessionStorage.getItem("refreshInProgress");
+      if (refreshing === "true") {
+        const msg = document.createElement("div");
+        msg.innerText = "🔄 Reconnexion en cours...";
+        msg.className = "reconnect-message";
+        document.querySelector("#loading-screen")?.appendChild(msg);
+    
+        // ➕ Animation sur le logo
+        document.getElementById("loading-logo")?.classList.add("spin");
+      }
+    
+      const quotes = [
+        "🎶 \"La basse ancre le rythme et redéfinit les harmonies.\" – James Jamerson",
+        "🎸 \"Il y a tellement plus que de jouer les notes. Quand vous jouez, vous jouez la vie.\" – Jaco Pastorius",
+        "🔊 \"La basse, c'est l'endroit où le funk réside.\" – Bootsy Collins",
+        // ... autres citations
+      ];
+    
+      const quoteEl = document.getElementById("music-quote");
+      const goButton = document.getElementById("go-button");
+    
+      if (quoteEl) {
+        const randomIndex = Math.floor(Math.random() * quotes.length);
+        typeWriter(quotes[randomIndex], quoteEl, 55, () => {
+          console.log("✌️ Citation animée terminée !");
+          goButton.classList.remove("hidden");
+          goButton.classList.add("show", "fade-in");
+        });
+      }
+    
+      function typeWriter(text, element, speed = 55, onComplete = null) {
+        let i = 0;
+        function type() {
+          if (i < text.length) {
+            element.innerHTML += text.charAt(i);
+            i++;
+            setTimeout(type, speed);
+          } else if (onComplete) {
+            setTimeout(() => {
+              if (element.classList.contains('quote')) {
+                element.classList.add("fade-out");
+              }
+              onComplete();
+            }, 2000);
+          }
+        }
+        type();
+      }
+    
+      let deferredPrompt = null;
+    
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const installBtn = document.getElementById('install-pwa-btn');
+        if (installBtn) {
+          installBtn.style.display = 'inline-block';
+          installBtn.addEventListener('click', () => {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+              if (choiceResult.outcome === 'accepted') {
+                console.log('✅ App installée !');
+              } else {
+                console.log('❌ Installation refusée');
+              }
+              deferredPrompt = null;
+              installBtn.style.display = 'none';
+            });
+          });
+        }
+      });
+    
+      document.getElementById("go-button")?.addEventListener("click", () => {
+        const loadingScreen = document.getElementById("loading-screen");
+        loadingScreen?.classList.add("fade-out");
+        setTimeout(() => {
+          loadingScreen?.remove();
+          initializeApp(); // 👈 l'app est lancée ici, proprement
+        }, 600); // attendre le fade-out
+      });
+    </script>
+    
+  </body>
+</html>
+
+<style>
+#app {
+  opacity: 0;
+  background-color: black;
+  transition: opacity 0.8s ease-in-out;
+  display: block !important; /* ← assure qu’il est toujours présent dans le flux */
+}
+
+#app.app-visible {
+  opacity: 1;
+}
+  .fade-out {
+    animation: fadeOut 1.5s ease-out forwards;
+  }
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
+  /* Cacher le bouton sans provoquer de décalage visuel */
+  .hidden {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .loader {
+  margin-top: 20px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-top: 4px solid #b1b1b1;
+  border-radius: 50%;
+
+  width: 32px;
+  height: 32px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+  /* Style du bouton GO */
+  .go-button {
+    margin-top: 2px;
+    padding: 1px 24px;
+    font-size: 15px;
+    font-weight: bold;
+    background: linear-gradient(135deg, #000000, #000000);
+    color: white;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease;
+    border: 1px solid;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    visibility: visible;
+    opacity: 1;
+  }
+
+  /* Animation fade-in lorsque le bouton devient visible */
+  .go-button.fade-in {
+    animation: fadeInAnimation 1s forwards;
+  }
+
+  /* Animation de fade-in */
+  @keyframes fadeInAnimation {
+    0% {
+      opacity: 0;
+      visibility: visible;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  /* Survol du bouton GO */
+  .go-button:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    background: #333;
+  }
+
+  /* Bouton GO au clic */
+  .go-button:active {
+    transform: scale(0.98);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Enlève le contour de focus */
+  .go-button:focus {
+    outline: none;
+  }
+
+  .quote {
+    color: white;
+    font-size: 14px;
+    font-style: italic;
+    margin-top: 20px;
+    text-align: center;
+    font-family: 'Poppins', sans-serif;
+    max-width: 240px;
+    animation: fadeIn 1.5s ease-out forwards;
+    opacity: 0;
+  }
+
+  /* ✅ Fond noir et centrage */
+  #loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    flex-direction: column;
+  }
+
+  .loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+
+  #loading-logo {
+    width: 80px;
+    height: auto;
+    opacity: 0;
+    animation: fadeIn 0.3s ease-in-out forwards, spin 2s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  #loading-logo.spin {
+    animation: spin 1.8s linear infinite, fadeIn 0.3s ease-in-out forwards;
+  }
+
+  .loading-container {
+    width: 180px;
+    height: 8px;
+    border: 2px solid rgba(27, 27, 27, 0.829);
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .loading-bar {
+    height: 100%;
+    width: 0%;
+    background: rgb(255, 38, 0);
+    animation: fill-progress 5s ease-out forwards;
+  }
+
+  @keyframes fill-progress {
+    0% { width: 0%; }
+    100% { width: 100%; }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+</style>

@@ -1,0 +1,18 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "./tsconfig.app.json"
+    }
+  ]
+
+  "compilerOptions": {
+    "baseUrl": "./src",  // Assure-toi que ce répertoire est la racine de ton code source
+    "paths": {
+      "@/*": ["src/*"]   // Cette ligne configure l'alias @ pour pointer vers src/
+    }
+  }
+}

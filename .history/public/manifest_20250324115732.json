@@ -1,0 +1,25 @@
+{
+  "name": "SunBassSchool",
+  "short_name": "SunBass",
+"description": "Une application tout-en-un pour bassistes : accordeur, métronome, partitions, cours personnalisés, vidéos et suivi de progression. Conçue par un musicien pro pour une pédagogie complète en français.",
+  "start_url": "/app/",
+  "scope": "/app",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "fr",
+
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "icons": [
+    {
+      "src": "/app/logo-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/app/logo-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

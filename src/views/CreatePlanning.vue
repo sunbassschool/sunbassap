@@ -29,7 +29,7 @@
 import Layout from "../views/Layout.vue";
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { getUserRole } from "@/utils/api.js";
+import { getUserRole } from "@/utils/api";
 
 export default {
   name: "CreatePlanning",

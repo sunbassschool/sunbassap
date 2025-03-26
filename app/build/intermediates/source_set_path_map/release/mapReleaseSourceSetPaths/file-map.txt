@@ -1,0 +1,10 @@
+com.sunbassschool.app-core-1.1.0-0 C:\Users\ouane\.gradle\caches\8.8\transforms\2144911bb09dce3a07f407e3b390637e\transformed\core-1.1.0\res
+com.sunbassschool.app-browser-1.4.0-1 C:\Users\ouane\.gradle\caches\8.8\transforms\b511174c15fdde7dea3e957094b4390b\transformed\browser-1.4.0\res
+com.sunbassschool.app-androidbrowserhelper-2.5.0-2 C:\Users\ouane\.gradle\caches\8.8\transforms\d3335fbdff4200978ad121d7b141def7\transformed\androidbrowserhelper-2.5.0\res
+com.sunbassschool.app-pngs-3 C:\Users\ouane\app\app\build\generated\res\pngs\release
+com.sunbassschool.app-resValues-4 C:\Users\ouane\app\app\build\generated\res\resValues\release
+com.sunbassschool.app-packageReleaseResources-5 C:\Users\ouane\app\app\build\intermediates\incremental\release\packageReleaseResources\merged.dir
+com.sunbassschool.app-packageReleaseResources-6 C:\Users\ouane\app\app\build\intermediates\incremental\release\packageReleaseResources\stripped.dir
+com.sunbassschool.app-release-7 C:\Users\ouane\app\app\build\intermediates\merged_res\release\mergeReleaseResources
+com.sunbassschool.app-main-8 C:\Users\ouane\app\app\src\main\res
+com.sunbassschool.app-release-9 C:\Users\ouane\app\app\src\release\res

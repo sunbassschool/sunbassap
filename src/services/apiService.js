@@ -23,7 +23,8 @@ export async function apiFetch(url, options = {}) {
       console.log("❌ Échec du refreshToken, utilisateur déconnecté.");
       localStorage.removeItem("jwt");
       localStorage.removeItem("refreshToken");
-      window.location.href = "/login"; // Redirection vers la connexion
+      router.replace("/login");
+// Redirection vers la connexion
     }
   }
 
