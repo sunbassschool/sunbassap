@@ -124,7 +124,6 @@ export const useAuthStore = defineStore("auth", {
       } finally {
         this.isRefreshingToken = false;
       }
-      return null;
     }
     ,
 

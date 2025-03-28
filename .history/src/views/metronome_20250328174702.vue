@@ -13,6 +13,8 @@
     type="video/mp4"
 />
 </video>
+<div id="background-activity"></div>
+<input ref="keepAliveInput" type="text" style="position: absolute; opacity: 0; pointer-events: none;" />
 
     <div class="metronome-container pulsing-bg">
       
@@ -23,6 +25,7 @@
             <label><span v-if="!isEditingTempo" @click="isEditingTempo = true" class="editable-bpm">
   {{ tempo }}
 </span>
+
 <input 
   v-else 
   type="number" 
@@ -292,7 +295,12 @@ export default {
         });
       }
     },
-
+    startAnimationLoop() {
+    const loop = () => {
+      this.animationFrameId = requestAnimationFrame(loop);
+    };
+    loop();
+  },
     async resumeAudioContext() {
       if (this.audioContext && this.audioContext.state === "suspended") {
         await this.audioContext.resume();
@@ -350,110 +358,113 @@ export default {
         }
       }
     },
+    keepContextAlive() {
+  if (!this.audioContext) return;
 
-    startMetronome() {
-  this.initAudioContext();         // 👈 TOUJOURS en premier
-  this.resumeAudioContext();
-
-  // 🎧 Hack oscillateur pour keep-alive iOS
-  this.keepAliveOscillator = this.audioContext.createOscillator();
+  const osc = this.audioContext.createOscillator();
   const gain = this.audioContext.createGain();
-  gain.gain.value = 0.0001;
-  this.keepAliveOscillator.connect(gain);
+  gain.gain.value = 0.0001; // inaudible
+  osc.connect(gain);
   gain.connect(this.audioContext.destination);
-  this.keepAliveOscillator.start();
+  osc.start();
+  osc.stop(this.audioContext.currentTime + 60); // 60s de keep-alive, renouvelé si besoin
+},
+startMetronome() {
+  this.startKeepAliveAudio();
+
+  this.initAudioContext();
+  this.resumeAudioContext();
+  this.keepContextAlive(); // ⬅️ Nouvelle ligne ici
 
   this.isPlaying = true;
   this.nextNoteTime = this.audioContext.currentTime + 0.1;
 
-  this.beatInterval = setInterval(() => {
-    this.scheduleNextBeat();
-  }, 25);
+  this.scheduleNextBeat();
 }
 
 ,
 
-stopMetronome() {
-  if (this.keepAliveOscillator) {
-    this.keepAliveOscillator.stop();
-    this.keepAliveOscillator.disconnect();
-    this.keepAliveOscillator = null;
-  }
+    stopMetronome() {
+      this.isPlaying = false;
+      sessionStorage.setItem("isPlaying", "false");
+      this.nextNoteTime = 0;
+      clearTimeout(this.interval);
 
-  this.isPlaying = false;
-  sessionStorage.setItem("isPlaying", "false");
-  clearTimeout(this.interval);
-  clearInterval(this.timerInterval);
-
-  this.elapsedTime = 0;
-  this.currentBeat = 1;
-  this.currentSubdivision = 0;
-}
-,
+      clearInterval(this.timerInterval);
+      this.elapsedTime = 0;
+      this.currentBeat = 1;
+      this.currentSubdivision = 0;
+    },
 
     async scheduleNextBeat() {
-  if (!this.isPlaying) return;
+  if (!this.isPlaying || !this.audioContext) return;
 
-  // 💡 Reprise de l'AudioContext si suspendu (ex: changement d'onglet)
-  if (this.audioContext.state === 'suspended') {
-    console.warn('AudioContext suspendu → reprise forcée...');
-    await this.audioContext.resume();
-    console.log('🔊 AudioContext repris avec succès');
-  }
-
+  const beatInterval = 60.0 / this.tempo;
+  const subInterval = beatInterval / this.subdivision;
+  const scheduleAheadTime = 1.0; // planifie 1s à l'avance
   const now = this.audioContext.currentTime;
-  while (this.nextNoteTime < now + 0.1) {
-    this.playClick();
 
-    let beatInterval = 60.0 / this.tempo;
-    let subdivisionInterval = beatInterval / this.subdivision;
-
-    let swingOffset = 0;
-
-    if (this.subdivision === 2 || this.subdivision === 4) {
-      if (this.currentSubdivision % 2 === 1) {
-        swingOffset = (this.swingAmount * subdivisionInterval) / 3;
-      } else {
-        swingOffset = -(this.swingAmount * subdivisionInterval) / 3;
-      }
-    }
-
-    this.nextNoteTime += subdivisionInterval + swingOffset;
+  while (this.nextNoteTime < now + scheduleAheadTime) {
+    this.playClick(this.nextNoteTime);
+    this.advanceNextNoteTime(subInterval);
   }
 
-  this.interval = setTimeout(() => this.scheduleNextBeat(), 25);
+  // Planifie de revérifier toutes les 100ms via le Web Audio, pas le setTimeout
+  this.interval = setTimeout(() => this.scheduleNextBeat(), 100);
 },
 
+startKeepAliveAudio() {
+  if (!this.audioContext) return;
+  
+  this.keepAliveAudioInterval = setInterval(() => {
+    const buffer = this.audioContext.createBuffer(1, 1, this.audioContext.sampleRate);
+    const source = this.audioContext.createBufferSource();
+    source.buffer = buffer;
+    source.connect(this.audioContext.destination);
+    source.start();
+  }, 15000); // toutes les 15 secondes
+},
 
-    playClick() {
-      this.currentSubdivision++;
+advanceNextNoteTime(subInterval) {
+  let swingOffset = 0;
 
-      if (this.currentSubdivision > this.subdivision) {
-        this.currentSubdivision = 1;
-        this.currentBeat = (this.currentBeat % this.measure) + 1;
-      }
+  if (this.subdivision === 2 || this.subdivision === 4) {
+    swingOffset = (this.currentSubdivision % 2 === 1 ? 1 : -1) * (this.swingAmount * subInterval) / 3;
+  }
 
-      let soundBuffer;
-      let volume;
+  this.nextNoteTime += subInterval + swingOffset;
 
-      if (this.currentSubdivision === 1) {
-        if (this.currentBeat === 1 && !this.disableStrongBeat) {
-          soundBuffer = this.soundBuffers.strong;
-          volume = this.volumeStrong;
-        } else {
-          soundBuffer = this.soundBuffers.weak;
-          volume = this.volumeWeak;
-        }
-      } else {
-        soundBuffer = this.soundBuffers.sub;
-        volume = this.volumeSub;
-      }
+  this.currentSubdivision++;
+  if (this.currentSubdivision > this.subdivision) {
+    this.currentSubdivision = 1;
+    this.currentBeat = (this.currentBeat % this.measure) + 1;
+  }
+}
+,
+playClick(time) {
+  let buffer, volume;
+  if (this.currentSubdivision === 1) {
+    if (this.currentBeat === 1 && !this.disableStrongBeat) {
+      buffer = this.soundBuffers.strong;
+      volume = this.volumeStrong;
+    } else {
+      buffer = this.soundBuffers.weak;
+      volume = this.volumeWeak;
+    }
+  } else {
+    buffer = this.soundBuffers.sub;
+    volume = this.volumeSub;
+  }
 
-      if (soundBuffer) this.playSound(soundBuffer, this.nextNoteTime, volume);
+  if (buffer) this.playSound(buffer, time, volume);
 
-      this.isBeating = true;
-      setTimeout(() => this.isBeating = false, 100);
-    },
+  // Beat animation non bloquante, à exécuter proche du temps réel
+  if (time <= this.audioContext.currentTime) {
+    this.isBeating = true;
+    setTimeout(() => (this.isBeating = false), 100);
+  }
+}
+,
 
     playSound(buffer, time, volumeLevel) {
       const gainNode = this.audioContext.createGain();
@@ -522,7 +533,20 @@ stopMetronome() {
   } else {
     console.log("🚫 Onglet masqué");
 
-   
+    if (this.isPlaying) {
+      this.wasPlayingBeforeHide = true;
+
+      this.savedState = {
+        currentBeat: this.currentBeat,
+        currentSubdivision: this.currentSubdivision,
+        nextNoteTime: this.nextNoteTime,
+        elapsedTime: this.elapsedTime,
+      };
+
+      this.isPlaying = false;
+      clearTimeout(this.interval);
+      clearInterval(this.timerInterval);
+    }
 
     if (this.wakeLock !== null) {
       this.wakeLock.release().then(() => {
@@ -574,6 +598,8 @@ stopMetronome() {
   async mounted() {
     document.body.style.overflow = "hidden";
     this.initAudioContext();
+    this.startAnimationLoop(); // 👈 Ajouter ceci
+
     await this.loadSounds();
     this.$refs.wakeLockVideo?.play().then(() => {
   console.log("🎬 Vidéo silencieuse lancée (iOS hack)");
@@ -591,6 +617,8 @@ stopMetronome() {
   },
 
   beforeUnmount() {
+    cancelAnimationFrame(this.animationFrameId);
+
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
     
     // Arrêt propre seulement si la page est vraiment démontée
@@ -612,6 +640,20 @@ stopMetronome() {
 
 
 <style scoped>
+#background-activity {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0.01;
+  animation: flicker 60s infinite;
+}
+
+@keyframes flicker {
+  0% { opacity: 0.01; }
+  50% { opacity: 0.02; }
+  100% { opacity: 0.01; }
+}
+
 .tooltip-icon {
   display: inline-block;
   margin-left: 6px;

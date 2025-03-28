@@ -298,7 +298,13 @@ export default {
         await this.audioContext.resume();
         console.log("🔊 AudioContext repris !");
         
-
+        if (this.wasPlayingBeforeHide) {
+  this.isPlaying = true;
+  this.nextNoteTime = this.audioContext.currentTime + 0.1;
+  this.scheduleNextBeat();
+  this.startTimer();
+  this.wasPlayingBeforeHide = false;
+}
 
       }
     },
@@ -352,44 +358,29 @@ export default {
     },
 
     startMetronome() {
-  this.initAudioContext();         // 👈 TOUJOURS en premier
+  this.initAudioContext();
   this.resumeAudioContext();
-
-  // 🎧 Hack oscillateur pour keep-alive iOS
-  this.keepAliveOscillator = this.audioContext.createOscillator();
-  const gain = this.audioContext.createGain();
-  gain.gain.value = 0.0001;
-  this.keepAliveOscillator.connect(gain);
-  gain.connect(this.audioContext.destination);
-  this.keepAliveOscillator.start();
 
   this.isPlaying = true;
   this.nextNoteTime = this.audioContext.currentTime + 0.1;
 
   this.beatInterval = setInterval(() => {
     this.scheduleNextBeat();
-  }, 25);
-}
-
-,
-
-stopMetronome() {
-  if (this.keepAliveOscillator) {
-    this.keepAliveOscillator.stop();
-    this.keepAliveOscillator.disconnect();
-    this.keepAliveOscillator = null;
-  }
-
-  this.isPlaying = false;
-  sessionStorage.setItem("isPlaying", "false");
-  clearTimeout(this.interval);
-  clearInterval(this.timerInterval);
-
-  this.elapsedTime = 0;
-  this.currentBeat = 1;
-  this.currentSubdivision = 0;
+  }, 25); // toutes les 25 ms → pas trop lourd mais très réactif
 }
 ,
+
+    stopMetronome() {
+      this.isPlaying = false;
+      sessionStorage.setItem("isPlaying", "false");
+      this.nextNoteTime = 0;
+      clearTimeout(this.interval);
+
+      clearInterval(this.timerInterval);
+      this.elapsedTime = 0;
+      this.currentBeat = 1;
+      this.currentSubdivision = 0;
+    },
 
     async scheduleNextBeat() {
   if (!this.isPlaying) return;
@@ -522,7 +513,20 @@ stopMetronome() {
   } else {
     console.log("🚫 Onglet masqué");
 
-   
+    if (this.isPlaying) {
+      this.wasPlayingBeforeHide = true;
+
+      this.savedState = {
+        currentBeat: this.currentBeat,
+        currentSubdivision: this.currentSubdivision,
+        nextNoteTime: this.nextNoteTime,
+        elapsedTime: this.elapsedTime,
+      };
+
+      this.isPlaying = false;
+      clearTimeout(this.interval);
+      clearInterval(this.timerInterval);
+    }
 
     if (this.wakeLock !== null) {
       this.wakeLock.release().then(() => {

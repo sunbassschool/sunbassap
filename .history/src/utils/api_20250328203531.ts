@@ -970,6 +970,7 @@ export async function checkAndRestoreTokens(): Promise<"valid" | "expired" | "un
 
     const authStore = useAuthStore();
 const newJwt = await authStore.refreshJwt(); //  // ✅ Ajoute des parenthèses pour lever toute ambiguïté
+const newJwt = await (refreshToken as () => Promise<string | null>)();
 
     if (!newJwt) {
       console.error("❌ Refresh échoué, session expirée.");

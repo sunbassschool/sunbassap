@@ -1,19 +1,5 @@
 <template>
   <Layout>
-    <video
-  ref="wakeLockVideo"
-  playsinline
-  muted
-  loop
-  autoplay
-  style="position: absolute; width: 1px; height: 1px; opacity: 0;"
->
-  <source
-    src="data:video/mp4;base64,AAAAHGZ0eXBNNAABAAAAAG1wNDFtcDQxaXNvbWF2YzEuNDFkYXNoAAAAAG1vb3YAAABsbXZoZAAAAAB8JY8AfCWPAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAABhpb2RzAAAAABCAgIAZAAAAAAABAQEAAAEAAABhc3RzAAAAAAEAAABhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAgAAAAEAAAAAAE1DRExBAAAAAAAfJY8AAABEUExhdmY1Mi4xLjEwMA==" 
-    type="video/mp4"
-/>
-</video>
-
     <div class="metronome-container pulsing-bg">
       
       <!-- Seconde card : Boutons de pulsation et de contrôle (Play/Pause) -->
@@ -208,44 +194,50 @@ const baseUrl = import.meta.env.MODE === "development" ? "/" : "/app/";
 
 export default {
   name: "Metronome",
+
   components: { Layout },
 
   data() {
-    return {
-      tempo: 120,
-      savedState: null,
+    
+  return {
+    tempo: 120,
+    measure: 4,
+    subdivision: 1,
+    swingAmount: parseFloat(localStorage.getItem("swingAmount") || "0"),
+    isWakeLockActive: false,
+    disableStrongBeat: localStorage.getItem("disableStrongBeat") === "true",
 
-      measure: 4,
-      subdivision: 1,
-      swingAmount: parseFloat(localStorage.getItem("swingAmount") || "0"),
-      isWakeLockActive: false,
-      disableStrongBeat: localStorage.getItem("disableStrongBeat") === "true",
-      isEditingTempo: false,
-      wakeLock: null,
-      isPlaying: false,
-      elapsedTime: 0,
-      audioContext: null,
-      nextNoteTime: 0.0,
-      currentBeat: 1,
-      currentSubdivision: 0,
-      isBeating: false,
-      interval: null,
-      soundBuffers: { strong: null, weak: null, sub: null },
-      volumeStrong: parseFloat(localStorage.getItem("volumeStrong") || "0.5"),
-      volumeWeak: parseFloat(localStorage.getItem("volumeWeak") || "0.5"),
-      volumeSub: parseFloat(localStorage.getItem("volumeSub") || "0.5"),
-      volumeClic: 0.2,
-      timerColor: "white",
-      timerInterval: null,
-      wasPlayingBeforeHide: false,
-      subdivisions: [
-        { value: 1, label: '', icon: `${baseUrl}assets/icons/quarter-note.png` },
-        { value: 2, label: '', icon: `${baseUrl}assets/icons/eighth-note.png` },
-        { value: 3, label: '', icon: `${baseUrl}assets/icons/triplet.png` },
-        { value: 4, label: '', icon: `${baseUrl}assets/icons/sixteenth-note.png` }
+
+    isEditingTempo: false,
+    wakeLock: null,
+
+    isPlaying: false,
+    elapsedTime: 0,
+    audioContext: null,
+    nextNoteTime: 0.0,
+    currentBeat: 1,
+    currentSubdivision: 0,
+    isBeating: false,
+    interval: null,
+    soundBuffers: { strong: null, weak: null, sub: null },
+    volumeStrong: parseFloat(localStorage.getItem("volumeStrong") || "0.5"),  // À 50% par défaut
+    volumeWeak: parseFloat(localStorage.getItem("volumeWeak") || "0.5"),      // À 50% par défaut
+    volumeSub: parseFloat(localStorage.getItem("volumeSub") || "0.5"),        // À 50% par défaut
+    volumeClic: 0.2,  // À 20% pour le clic
+    timerColor: "white",
+    timerInterval: null,
+
+    // ✅ Ajout des subdivisions ici !
+    subdivisions: [
+    { value: 1, label: '', icon: `${baseUrl}assets/icons/quarter-note.png` },
+  { value: 2, label: '', icon: `${baseUrl}assets/icons/eighth-note.png` },
+  { value: 3, label: '', icon: `${baseUrl}assets/icons/triplet.png` },
+  { value: 4, label: '', icon: `${baseUrl}assets/icons/sixteenth-note.png` }
+
       ]
-    };
-  },
+  };
+},
+
   computed: {
     formattedTime() {
       const minutes = Math.floor(this.elapsedTime / 60);
@@ -253,27 +245,28 @@ export default {
       return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     },
     accentuateFirstBeat: {
-      get() {
-        return !this.disableStrongBeat;
-      },
-      set(val) {
-        this.disableStrongBeat = !val;
-      }
-    },
+  get() {
+    return !this.disableStrongBeat;
+  },
+  set(val) {
+    this.disableStrongBeat = !val;
+  }
+},
     swingLabel() {
-      const val = this.swingAmount;
-      if (val < 0.2) return "Très léger (presque droit)";
-      if (val < 0.4) return "Léger swing (subtil)";
-      if (val < 0.6) return "Modéré (groove classique)";
-      if (val < 0.8) return "Marqué (groove funky)";
-      return "Fort swing (shuffle très prononcé)";
-    },
-    getSwingLedColor() {
-      const val = this.swingAmount;
-      if (val < 0.3) return 'led-green';
-      if (val < 0.6) return 'led-orange';
-      return 'led-red';
-    }
+  const val = this.swingAmount;
+  if (val < 0.2) return "Très léger (presque droit)";
+  if (val < 0.4) return "Léger swing (subtil)";
+  if (val < 0.6) return "Modéré (groove classique)";
+  if (val < 0.8) return "Marqué (groove funky)";
+  return "Fort swing (shuffle très prononcé)";
+},
+getSwingLedColor() {
+  const val = this.swingAmount;
+  if (val < 0.3) return 'led-green';
+  if (val < 0.6) return 'led-orange';
+  return 'led-red';
+}
+,
   },
 
   methods: {
@@ -281,46 +274,32 @@ export default {
       if (!this.audioContext) {
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
         console.log("🔊 AudioContext initialisé !");
-        
-        // Ajout de l'écouteur pour détecter la suspension
-        this.audioContext.addEventListener('statechange', () => {
-          console.log(`AudioContext state changed to: ${this.audioContext.state}`);
-          if (this.audioContext.state === 'suspended' && this.isPlaying) {
-            console.warn("AudioContext suspendu alors que le métronome joue !");
-            this.wasPlayingBeforeHide = true;
-          }
-        });
       }
     },
+    getSliderGradient(value) {
+  const percent = Math.round(value * 100);
+  const red = Math.round(255 * value);
+  const green = Math.round(200 - 100 * value);
+  const color = `rgb(${red}, ${green}, 80)`;
 
+  return `linear-gradient(to right, ${color} ${percent}%, #555 ${percent}%)`;
+},
     async resumeAudioContext() {
       if (this.audioContext && this.audioContext.state === "suspended") {
         await this.audioContext.resume();
         console.log("🔊 AudioContext repris !");
-        
-
-
       }
     },
-
-    getSliderGradient(value) {
-      const percent = Math.round(value * 100);
-      const red = Math.round(255 * value);
-      const green = Math.round(200 - 100 * value);
-      const color = `rgb(${red}, ${green}, 80)`;
-      return `linear-gradient(to right, ${color} ${percent}%, #555 ${percent}%)`;
-    },
-
     selectSubdivision(value) {
-      this.subdivision = value;
-    },
-
+    this.subdivision = value;
+  },
     async loadSounds() {
       const soundUrls = {
         strong: `${baseUrl}assets/audio/strong-beat.wav`,
-        weak: `${baseUrl}assets/audio/weak-beat.wav`,
-        sub: `${baseUrl}assets/audio/subdivision.wav`
-      };
+  weak: `${baseUrl}assets/audio/weak-beat.wav`,
+  sub: `${baseUrl}assets/audio/subdivision.wav`
+};
+
 
       const soundPromises = Object.entries(soundUrls).map(async ([key, url]) => {
         const response = await fetch(url);
@@ -333,97 +312,81 @@ export default {
     },
 
     async requestWakeLock() {
-      if ("wakeLock" in navigator && document.visibilityState === "visible") {
-        try {
-          this.wakeLock = await navigator.wakeLock.request("screen");
-          this.isWakeLockActive = true;
+  if ("wakeLock" in navigator && document.visibilityState === "visible") {
+    try {
+      this.wakeLock = await navigator.wakeLock.request("screen");
+      this.isWakeLockActive = true;
 
-          this.wakeLock.addEventListener("release", () => {
-            this.isWakeLockActive = false;
-            console.log("🔓 Wake Lock relâché");
-          });
+      this.wakeLock.addEventListener("release", () => {
+        this.isWakeLockActive = false;
+        console.log("🔓 Wake Lock relâché");
+      });
 
-          console.log("🔒 Wake Lock activé !");
-        } catch (err) {
-          console.error("❌ Impossible d'activer le Wake Lock :", err);
-          this.isWakeLockActive = false;
-        }
-      }
-    },
+      console.log("🔒 Wake Lock activé !");
+    } catch (err) {
+      console.error("❌ Impossible d'activer le Wake Lock :", err);
+      this.isWakeLockActive = false;
+    }
+  }
+}
+,
+
 
     startMetronome() {
-  this.initAudioContext();         // 👈 TOUJOURS en premier
-  this.resumeAudioContext();
+      if (this.isPlaying) return;
 
-  // 🎧 Hack oscillateur pour keep-alive iOS
-  this.keepAliveOscillator = this.audioContext.createOscillator();
-  const gain = this.audioContext.createGain();
-  gain.gain.value = 0.0001;
-  this.keepAliveOscillator.connect(gain);
-  gain.connect(this.audioContext.destination);
-  this.keepAliveOscillator.start();
+      this.initAudioContext();
+      this.resumeAudioContext();
+      this.isPlaying = true;
+      sessionStorage.setItem("isPlaying", "true"); // ✅ Sauvegarde de l'état
 
-  this.isPlaying = true;
-  this.nextNoteTime = this.audioContext.currentTime + 0.1;
+      this.nextNoteTime = this.audioContext.currentTime;
+      this.startTimer();
+      this.scheduleNextBeat();
+    },
 
-  this.beatInterval = setInterval(() => {
-    this.scheduleNextBeat();
-  }, 25);
-}
+    stopMetronome() {
+      this.isPlaying = false;
+      sessionStorage.setItem("isPlaying", "false"); // ✅ Sauvegarde de l'état
+      this.nextNoteTime = 0;
+      cancelAnimationFrame(this.interval);
+      clearInterval(this.timerInterval);
+      this.elapsedTime = 0;
+    },
 
-,
-
-stopMetronome() {
-  if (this.keepAliveOscillator) {
-    this.keepAliveOscillator.stop();
-    this.keepAliveOscillator.disconnect();
-    this.keepAliveOscillator = null;
-  }
-
-  this.isPlaying = false;
-  sessionStorage.setItem("isPlaying", "false");
-  clearTimeout(this.interval);
-  clearInterval(this.timerInterval);
-
-  this.elapsedTime = 0;
-  this.currentBeat = 1;
-  this.currentSubdivision = 0;
-}
-,
-
-    async scheduleNextBeat() {
+    scheduleNextBeat() {
   if (!this.isPlaying) return;
-
-  // 💡 Reprise de l'AudioContext si suspendu (ex: changement d'onglet)
-  if (this.audioContext.state === 'suspended') {
-    console.warn('AudioContext suspendu → reprise forcée...');
-    await this.audioContext.resume();
-    console.log('🔊 AudioContext repris avec succès');
-  }
 
   const now = this.audioContext.currentTime;
   while (this.nextNoteTime < now + 0.1) {
     this.playClick();
 
-    let beatInterval = 60.0 / this.tempo;
-    let subdivisionInterval = beatInterval / this.subdivision;
+    let beatInterval = 60.0 / this.tempo; // Temps entre chaque temps fort
+    let subdivisionInterval = beatInterval / this.subdivision; // Temps entre subdivisions
 
     let swingOffset = 0;
-
+    
+    // 🔥 Appliquer le swing uniquement si subdivision = 2 (croches) ou 4 (double-croches)
     if (this.subdivision === 2 || this.subdivision === 4) {
       if (this.currentSubdivision % 2 === 1) {
+        // Première croche → allongée (2/3 du temps normal)
         swingOffset = (this.swingAmount * subdivisionInterval) / 3;
       } else {
+        // Deuxième croche → raccourcie (1/3 du temps normal)
         swingOffset = -(this.swingAmount * subdivisionInterval) / 3;
       }
     }
 
+    // ✅ Appliquer le swing uniquement aux subdivisions
     this.nextNoteTime += subdivisionInterval + swingOffset;
   }
 
-  this.interval = setTimeout(() => this.scheduleNextBeat(), 25);
-},
+  this.interval = requestAnimationFrame(this.scheduleNextBeat);
+}
 
+
+
+,
 
     playClick() {
       this.currentSubdivision++;
@@ -438,13 +401,14 @@ stopMetronome() {
 
       if (this.currentSubdivision === 1) {
         if (this.currentBeat === 1 && !this.disableStrongBeat) {
-          soundBuffer = this.soundBuffers.strong;
-          volume = this.volumeStrong;
-        } else {
-          soundBuffer = this.soundBuffers.weak;
-          volume = this.volumeWeak;
-        }
-      } else {
+  soundBuffer = this.soundBuffers.strong;
+  volume = this.volumeStrong;
+} else {
+  soundBuffer = this.soundBuffers.weak;
+  volume = this.volumeWeak;
+}
+}
+ else {
         soundBuffer = this.soundBuffers.sub;
         volume = this.volumeSub;
       }
@@ -457,7 +421,7 @@ stopMetronome() {
 
     playSound(buffer, time, volumeLevel) {
       const gainNode = this.audioContext.createGain();
-      gainNode.gain.value = volumeLevel * 2;
+      gainNode.gain.value = volumeLevel * 2; // 🔥 Augmentation du gain (multiplier par 2)
 
       const source = this.audioContext.createBufferSource();
       source.buffer = buffer;
@@ -489,124 +453,68 @@ stopMetronome() {
       this.elapsedTime = 0;
       this.timerColor = "white";
     },
-
-    handleVisibilityChange: async function () {
-  if (document.visibilityState === 'visible') {
-    console.log("👁️ Onglet redevenu visible");
-
-    // 🔊 On reprend l'audio et recharge les sons si nécessaire
-    await this.resumeAudioContext();
-    await this.loadSounds(); // 💡 Sécurité pour recharger les buffers si perdus
-
-    await this.requestWakeLock();
-
-    // ✅ Reprise automatique du métronome si il était en cours
-    if (this.wasPlayingBeforeHide && this.savedState) {
-      console.log("⏯️ Reprise du métronome...");
-
-      this.currentBeat = this.savedState.currentBeat;
-      this.currentSubdivision = this.savedState.currentSubdivision;
-      this.elapsedTime = this.savedState.elapsedTime;
-
-      this.nextNoteTime = this.audioContext.currentTime + 0.1;
-      this.isPlaying = true;
-
-      this.scheduleNextBeat();
-      this.startTimer();
-
-      this.savedState = null;
-      this.wasPlayingBeforeHide = false;
-
-      console.log("✅ Métronome relancé !");
-    }
-  } else {
-    console.log("🚫 Onglet masqué");
-
-   
-
-    if (this.wakeLock !== null) {
-      this.wakeLock.release().then(() => {
-        this.wakeLock = null;
-        this.isWakeLockActive = false;
-        console.log("🔓 Wake Lock relâché");
-      });
-    }
-  }
-}
-
-},
+  },
 
   watch: {
     disableStrongBeat(val) {
-      localStorage.setItem("disableStrongBeat", val);
-    },
-    tempo(newVal) {
-      localStorage.setItem('userBpm', newVal);
-      if (this.isPlaying) {
-        clearTimeout(this.interval);
+    localStorage.setItem("disableStrongBeat", val);
+  },
+  tempo(newVal) {
+    // Sauvegarde la nouvelle valeur de tempo dans localStorage
+    localStorage.setItem('userBpm', newVal);
 
-        this.nextNoteTime = this.audioContext.currentTime;
-        this.scheduleNextBeat();
-      }
-    },
+    if (this.isPlaying) {
+      // 🔁 Recalage du métronome avec le nouveau tempo
+      cancelAnimationFrame(this.interval);
+      this.nextNoteTime = this.audioContext.currentTime;
+      this.scheduleNextBeat();
+    }
+  },
     swingAmount(val) {
-      const parsed = parseFloat(val);
-      this.swingAmount = isNaN(parsed) ? 0 : parsed;
-      localStorage.setItem("swingAmount", this.swingAmount);
-    },
-    volumeStrong(val) {
-      this.volumeStrong = parseFloat(val);
-      localStorage.setItem("volumeStrong", this.volumeStrong);
-    },
-    volumeWeak(val) {
-      this.volumeWeak = parseFloat(val);
-      localStorage.setItem("volumeWeak", this.volumeWeak);
-    },
-    volumeSub(val) {
-      this.volumeSub = parseFloat(val);
-      localStorage.setItem("volumeSub", this.volumeSub);
-    },
+    const parsed = parseFloat(val);
+    this.swingAmount = isNaN(parsed) ? 0 : parsed;
+    localStorage.setItem("swingAmount", this.swingAmount);
+  },
+  volumeStrong(val) {
+    this.volumeStrong = parseFloat(val);
+    localStorage.setItem("volumeStrong", this.volumeStrong);
+  },
+  volumeWeak(val) {
+    this.volumeWeak = parseFloat(val);
+    localStorage.setItem("volumeWeak", this.volumeWeak);
+  },
+  volumeSub(val) {
+    this.volumeSub = parseFloat(val);
+    localStorage.setItem("volumeSub", this.volumeSub);
+  },
+
     isPlaying(newVal) {
       sessionStorage.setItem("isPlaying", newVal ? "true" : "false");
+      this.$forceUpdate();
     }
   },
 
   async mounted() {
-    document.body.style.overflow = "hidden";
-    this.initAudioContext();
-    await this.loadSounds();
-    this.$refs.wakeLockVideo?.play().then(() => {
-  console.log("🎬 Vidéo silencieuse lancée (iOS hack)");
-}).catch(err => {
-  console.warn("❌ Impossible de jouer la vidéo silencieuse :", err);
+  document.body.style.overflow = "hidden";
+  this.initAudioContext();
+  await this.loadSounds();
+
+  document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible') {
+    await this.requestWakeLock();
+    if (this.isPlaying) {
+      this.resumeAudioContext(); // relancer le contexte si nécessaire
+    }
+  }
 });
 
-    // Gestion améliorée des changements de visibilité
-    document.addEventListener('visibilitychange', this.handleVisibilityChange);
-    
-    // Récupération de l'état précédent
- 
+  await this.requestWakeLock(); // 🆕 Lancer une première fois au démarrage
+},
+beforeUnmount() {
+  this.stopMetronome();
+  document.body.style.overflow = ""; // 🔓 Rétablit le scroll
+}
 
-    await this.requestWakeLock();
-  },
-
-  beforeUnmount() {
-    document.removeEventListener('visibilitychange', this.handleVisibilityChange);
-    
-    // Arrêt propre seulement si la page est vraiment démontée
-    if (!document.hidden && this.isPlaying) {
-      this.stopMetronome();
-    }
-    
-    // Libération du Wake Lock
-    if (this.wakeLock !== null) {
-      this.wakeLock.release().then(() => {
-        this.wakeLock = null;
-      });
-    }
-    
-    document.body.style.overflow = "";
-  }
 };
 </script>
 

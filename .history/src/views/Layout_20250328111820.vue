@@ -302,7 +302,7 @@
 
 
 <script>
-import { ref, computed, onMounted, onUnmounted, watch, getCurrentInstance  } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch  } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/authStore"; // ✅ On utilise Pinia
 import { logoutUser } from "@/utils/api.ts"; // 🔥 Import correct de l'API d'auth
@@ -318,9 +318,7 @@ MiniMetronome
     
     const router = useRouter();
     const authStore = useAuthStore(); // ✅ Accès à l'état global d'authentification
-    const root = getCurrentInstance().appContext.config.globalProperties;
-  root.isMetronomePlaying = ref(false);
-  root.metronomeInstance = null;
+ 
 
     const showMiniMetronome = inject('showMiniMetronome')
     console.log("📦 showMiniMetronome from inject:", showMiniMetronome)

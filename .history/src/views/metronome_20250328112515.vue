@@ -1,19 +1,5 @@
 <template>
   <Layout>
-    <video
-  ref="wakeLockVideo"
-  playsinline
-  muted
-  loop
-  autoplay
-  style="position: absolute; width: 1px; height: 1px; opacity: 0;"
->
-  <source
-    src="data:video/mp4;base64,AAAAHGZ0eXBNNAABAAAAAG1wNDFtcDQxaXNvbWF2YzEuNDFkYXNoAAAAAG1vb3YAAABsbXZoZAAAAAB8JY8AfCWPAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAABhpb2RzAAAAABCAgIAZAAAAAAABAQEAAAEAAABhc3RzAAAAAAEAAABhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAgAAAAEAAAAAAE1DRExBAAAAAAAfJY8AAABEUExhdmY1Mi4xLjEwMA==" 
-    type="video/mp4"
-/>
-</video>
-
     <div class="metronome-container pulsing-bg">
       
       <!-- Seconde card : Boutons de pulsation et de contrôle (Play/Pause) -->
@@ -213,8 +199,6 @@ export default {
   data() {
     return {
       tempo: 120,
-      savedState: null,
-
       measure: 4,
       subdivision: 1,
       swingAmount: parseFloat(localStorage.getItem("swingAmount") || "0"),
@@ -237,7 +221,7 @@ export default {
       volumeClic: 0.2,
       timerColor: "white",
       timerInterval: null,
-      wasPlayingBeforeHide: false,
+      wasPlayingBeforeHide: false, // Nouvelle variable pour suivre l'état
       subdivisions: [
         { value: 1, label: '', icon: `${baseUrl}assets/icons/quarter-note.png` },
         { value: 2, label: '', icon: `${baseUrl}assets/icons/eighth-note.png` },
@@ -246,6 +230,7 @@ export default {
       ]
     };
   },
+
   computed: {
     formattedTime() {
       const minutes = Math.floor(this.elapsedTime / 60);
@@ -298,8 +283,10 @@ export default {
         await this.audioContext.resume();
         console.log("🔊 AudioContext repris !");
         
-
-
+        if (this.wasPlayingBeforeHide) {
+          this.startMetronome();
+          this.wasPlayingBeforeHide = false;
+        }
       }
     },
 
@@ -352,78 +339,54 @@ export default {
     },
 
     startMetronome() {
-  this.initAudioContext();         // 👈 TOUJOURS en premier
-  this.resumeAudioContext();
+      if (this.isPlaying) return;
 
-  // 🎧 Hack oscillateur pour keep-alive iOS
-  this.keepAliveOscillator = this.audioContext.createOscillator();
-  const gain = this.audioContext.createGain();
-  gain.gain.value = 0.0001;
-  this.keepAliveOscillator.connect(gain);
-  gain.connect(this.audioContext.destination);
-  this.keepAliveOscillator.start();
+      this.initAudioContext();
+      this.resumeAudioContext();
+      this.isPlaying = true;
+      sessionStorage.setItem("isPlaying", "true");
 
-  this.isPlaying = true;
-  this.nextNoteTime = this.audioContext.currentTime + 0.1;
+      this.nextNoteTime = this.audioContext.currentTime + 0.1; // Petit délai pour éviter les problèmes
+      this.startTimer();
+      this.scheduleNextBeat();
+    },
 
-  this.beatInterval = setInterval(() => {
-    this.scheduleNextBeat();
-  }, 25);
-}
+    stopMetronome() {
+      this.isPlaying = false;
+      sessionStorage.setItem("isPlaying", "false");
+      this.nextNoteTime = 0;
+      cancelAnimationFrame(this.interval);
+      clearInterval(this.timerInterval);
+      this.elapsedTime = 0;
+      this.currentBeat = 1;
+      this.currentSubdivision = 0;
+    },
 
-,
+    scheduleNextBeat() {
+      if (!this.isPlaying) return;
 
-stopMetronome() {
-  if (this.keepAliveOscillator) {
-    this.keepAliveOscillator.stop();
-    this.keepAliveOscillator.disconnect();
-    this.keepAliveOscillator = null;
-  }
+      const now = this.audioContext.currentTime;
+      while (this.nextNoteTime < now + 0.1) {
+        this.playClick();
 
-  this.isPlaying = false;
-  sessionStorage.setItem("isPlaying", "false");
-  clearTimeout(this.interval);
-  clearInterval(this.timerInterval);
+        let beatInterval = 60.0 / this.tempo;
+        let subdivisionInterval = beatInterval / this.subdivision;
 
-  this.elapsedTime = 0;
-  this.currentBeat = 1;
-  this.currentSubdivision = 0;
-}
-,
+        let swingOffset = 0;
+        
+        if (this.subdivision === 2 || this.subdivision === 4) {
+          if (this.currentSubdivision % 2 === 1) {
+            swingOffset = (this.swingAmount * subdivisionInterval) / 3;
+          } else {
+            swingOffset = -(this.swingAmount * subdivisionInterval) / 3;
+          }
+        }
 
-    async scheduleNextBeat() {
-  if (!this.isPlaying) return;
-
-  // 💡 Reprise de l'AudioContext si suspendu (ex: changement d'onglet)
-  if (this.audioContext.state === 'suspended') {
-    console.warn('AudioContext suspendu → reprise forcée...');
-    await this.audioContext.resume();
-    console.log('🔊 AudioContext repris avec succès');
-  }
-
-  const now = this.audioContext.currentTime;
-  while (this.nextNoteTime < now + 0.1) {
-    this.playClick();
-
-    let beatInterval = 60.0 / this.tempo;
-    let subdivisionInterval = beatInterval / this.subdivision;
-
-    let swingOffset = 0;
-
-    if (this.subdivision === 2 || this.subdivision === 4) {
-      if (this.currentSubdivision % 2 === 1) {
-        swingOffset = (this.swingAmount * subdivisionInterval) / 3;
-      } else {
-        swingOffset = -(this.swingAmount * subdivisionInterval) / 3;
+        this.nextNoteTime += subdivisionInterval + swingOffset;
       }
-    }
 
-    this.nextNoteTime += subdivisionInterval + swingOffset;
-  }
-
-  this.interval = setTimeout(() => this.scheduleNextBeat(), 25);
-},
-
+      this.interval = requestAnimationFrame(this.scheduleNextBeat);
+    },
 
     playClick() {
       this.currentSubdivision++;
@@ -490,51 +453,23 @@ stopMetronome() {
       this.timerColor = "white";
     },
 
-    handleVisibilityChange: async function () {
-  if (document.visibilityState === 'visible') {
-    console.log("👁️ Onglet redevenu visible");
-
-    // 🔊 On reprend l'audio et recharge les sons si nécessaire
-    await this.resumeAudioContext();
-    await this.loadSounds(); // 💡 Sécurité pour recharger les buffers si perdus
-
-    await this.requestWakeLock();
-
-    // ✅ Reprise automatique du métronome si il était en cours
-    if (this.wasPlayingBeforeHide && this.savedState) {
-      console.log("⏯️ Reprise du métronome...");
-
-      this.currentBeat = this.savedState.currentBeat;
-      this.currentSubdivision = this.savedState.currentSubdivision;
-      this.elapsedTime = this.savedState.elapsedTime;
-
-      this.nextNoteTime = this.audioContext.currentTime + 0.1;
-      this.isPlaying = true;
-
-      this.scheduleNextBeat();
-      this.startTimer();
-
-      this.savedState = null;
-      this.wasPlayingBeforeHide = false;
-
-      console.log("✅ Métronome relancé !");
+    handleVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        this.resumeAudioContext().then(() => {
+          if (this.wasPlayingBeforeHide) {
+            this.startMetronome();
+            this.wasPlayingBeforeHide = false;
+          }
+        });
+        this.requestWakeLock();
+      } else {
+        if (this.isPlaying) {
+          this.wasPlayingBeforeHide = true;
+          // On ne stop pas le métronome, mais on laisse l'audio se suspendre
+        }
+      }
     }
-  } else {
-    console.log("🚫 Onglet masqué");
-
-   
-
-    if (this.wakeLock !== null) {
-      this.wakeLock.release().then(() => {
-        this.wakeLock = null;
-        this.isWakeLockActive = false;
-        console.log("🔓 Wake Lock relâché");
-      });
-    }
-  }
-}
-
-},
+  },
 
   watch: {
     disableStrongBeat(val) {
@@ -543,8 +478,7 @@ stopMetronome() {
     tempo(newVal) {
       localStorage.setItem('userBpm', newVal);
       if (this.isPlaying) {
-        clearTimeout(this.interval);
-
+        cancelAnimationFrame(this.interval);
         this.nextNoteTime = this.audioContext.currentTime;
         this.scheduleNextBeat();
       }
@@ -575,17 +509,15 @@ stopMetronome() {
     document.body.style.overflow = "hidden";
     this.initAudioContext();
     await this.loadSounds();
-    this.$refs.wakeLockVideo?.play().then(() => {
-  console.log("🎬 Vidéo silencieuse lancée (iOS hack)");
-}).catch(err => {
-  console.warn("❌ Impossible de jouer la vidéo silencieuse :", err);
-});
 
     // Gestion améliorée des changements de visibilité
     document.addEventListener('visibilitychange', this.handleVisibilityChange);
     
     // Récupération de l'état précédent
- 
+    const wasPlaying = sessionStorage.getItem("isPlaying") === "true";
+    if (wasPlaying) {
+      this.startMetronome();
+    }
 
     await this.requestWakeLock();
   },

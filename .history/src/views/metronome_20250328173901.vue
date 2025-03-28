@@ -13,6 +13,8 @@
     type="video/mp4"
 />
 </video>
+<div id="background-activity"></div>
+<input ref="keepAliveInput" type="text" style="position: absolute; opacity: 0; pointer-events: none;" />
 
     <div class="metronome-container pulsing-bg">
       
@@ -23,6 +25,7 @@
             <label><span v-if="!isEditingTempo" @click="isEditingTempo = true" class="editable-bpm">
   {{ tempo }}
 </span>
+
 <input 
   v-else 
   type="number" 
@@ -214,6 +217,7 @@ export default {
     return {
       tempo: 120,
       savedState: null,
+      worker: null,
 
       measure: 4,
       subdivision: 1,
@@ -292,7 +296,12 @@ export default {
         });
       }
     },
-
+    startAnimationLoop() {
+    const loop = () => {
+      this.animationFrameId = requestAnimationFrame(loop);
+    };
+    loop();
+  },
     async resumeAudioContext() {
       if (this.audioContext && this.audioContext.state === "suspended") {
         await this.audioContext.resume();
@@ -352,44 +361,35 @@ export default {
     },
 
     startMetronome() {
-  this.initAudioContext();         // 👈 TOUJOURS en premier
+  this.initAudioContext();
   this.resumeAudioContext();
 
-  // 🎧 Hack oscillateur pour keep-alive iOS
-  this.keepAliveOscillator = this.audioContext.createOscillator();
-  const gain = this.audioContext.createGain();
-  gain.gain.value = 0.0001;
-  this.keepAliveOscillator.connect(gain);
-  gain.connect(this.audioContext.destination);
-  this.keepAliveOscillator.start();
-
   this.isPlaying = true;
-  this.nextNoteTime = this.audioContext.currentTime + 0.1;
 
-  this.beatInterval = setInterval(() => {
-    this.scheduleNextBeat();
-  }, 25);
+  this.worker.postMessage({
+    command: "start",
+    value: {
+      tempo: this.tempo,
+      subdivision: this.subdivision
+    }
+  });
+
+  this.startTimer();
 }
 
 ,
 
-stopMetronome() {
-  if (this.keepAliveOscillator) {
-    this.keepAliveOscillator.stop();
-    this.keepAliveOscillator.disconnect();
-    this.keepAliveOscillator = null;
-  }
+    stopMetronome() {
+      this.isPlaying = false;
+      sessionStorage.setItem("isPlaying", "false");
+      this.nextNoteTime = 0;
+      clearTimeout(this.interval);
 
-  this.isPlaying = false;
-  sessionStorage.setItem("isPlaying", "false");
-  clearTimeout(this.interval);
-  clearInterval(this.timerInterval);
-
-  this.elapsedTime = 0;
-  this.currentBeat = 1;
-  this.currentSubdivision = 0;
-}
-,
+      clearInterval(this.timerInterval);
+      this.elapsedTime = 0;
+      this.currentBeat = 1;
+      this.currentSubdivision = 0;
+    },
 
     async scheduleNextBeat() {
   if (!this.isPlaying) return;
@@ -522,7 +522,20 @@ stopMetronome() {
   } else {
     console.log("🚫 Onglet masqué");
 
-   
+    if (this.isPlaying) {
+      this.wasPlayingBeforeHide = true;
+
+      this.savedState = {
+        currentBeat: this.currentBeat,
+        currentSubdivision: this.currentSubdivision,
+        nextNoteTime: this.nextNoteTime,
+        elapsedTime: this.elapsedTime,
+      };
+
+      this.isPlaying = false;
+      clearTimeout(this.interval);
+      clearInterval(this.timerInterval);
+    }
 
     if (this.wakeLock !== null) {
       this.wakeLock.release().then(() => {
@@ -572,8 +585,90 @@ stopMetronome() {
   },
 
   async mounted() {
+    document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible') {
+    console.log("👁️ Onglet redevenu visible");
+    
+    if (this.audioContext && this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+      console.log("🔊 AudioContext repris automatiquement");
+    }
+
+    // 🔁 Recharge les buffers si besoin
+    await this.loadSounds();
+
+    // 🔐 Relance le wake lock si tu l’utilises
+    await this.requestWakeLock();
+
+    // ⏯️ Redémarre ton métronome si nécessaire
+    if (this.wasPlayingBeforeHide && !this.isPlaying) {
+      this.startMetronome();
+      this.startTimer();
+      this.wasPlayingBeforeHide = false;
+    }
+
+  } else {
+    console.log("🔕 Onglet masqué");
+
+    if (this.isPlaying) {
+      this.wasPlayingBeforeHide = true;
+      this.stopMetronome();
+    }
+
+    if (this.wakeLock) {
+      this.wakeLock.release();
+      this.wakeLock = null;
+      this.isWakeLockActive = false;
+    }
+  }
+});
+const blob = new Blob([`
+  let tempo = 120;
+  let interval = null;
+
+  self.onmessage = (e) => {
+    const { command, value } = e.data;
+
+    if (command === "start") {
+      tempo = value.tempo;
+      const intervalMs = (60 / tempo) * 1000 / value.subdivision;
+
+      if (interval) clearInterval(interval);
+      interval = setInterval(() => {
+        self.postMessage({ type: "tick", time: Date.now() });
+      }, intervalMs);
+    }
+
+    if (command === "stop") {
+      clearInterval(interval);
+    }
+
+    if (command === "tempo") {
+      tempo = value;
+    }
+  };
+`], { type: "application/javascript" });
+
+this.worker = new Worker(URL.createObjectURL(blob));
+
+this.worker.onmessage = (e) => {
+  if (e.data.type === "tick" && this.isPlaying) {
+    this.playClick(); // ⬅️ réutilise ta méthode existante
+  }
+};
+
+    this.keepAliveInterval = setInterval(() => {
+  const el = this.$refs.keepAliveInput;
+  if (el) {
+    el.focus();
+    el.blur();
+  }
+}, 30000); // toutes les 30 sec
+
     document.body.style.overflow = "hidden";
     this.initAudioContext();
+    this.startAnimationLoop(); // 👈 Ajouter ceci
+
     await this.loadSounds();
     this.$refs.wakeLockVideo?.play().then(() => {
   console.log("🎬 Vidéo silencieuse lancée (iOS hack)");
@@ -591,6 +686,9 @@ stopMetronome() {
   },
 
   beforeUnmount() {
+    cancelAnimationFrame(this.animationFrameId);
+    clearInterval(this.keepAliveInterval);
+
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
     
     // Arrêt propre seulement si la page est vraiment démontée
@@ -612,6 +710,20 @@ stopMetronome() {
 
 
 <style scoped>
+#background-activity {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0.01;
+  animation: flicker 60s infinite;
+}
+
+@keyframes flicker {
+  0% { opacity: 0.01; }
+  50% { opacity: 0.02; }
+  100% { opacity: 0.01; }
+}
+
 .tooltip-icon {
   display: inline-block;
   margin-left: 6px;

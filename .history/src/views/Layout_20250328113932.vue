@@ -342,7 +342,7 @@ watch(showMiniMetronome, (newValue) => {
     const refreshFailed = ref(false);
  
     const isPlaying = inject('isPlaying') // 🎧 pour le widget metronome
-
+    const isMetronomeInitialized = ref(false);
 
     // ✅ Gestion du logo dynamique
     const baseUrl = import.meta.env.VITE_BASE_URL || "/";

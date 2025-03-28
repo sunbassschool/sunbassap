@@ -373,23 +373,22 @@ export default {
 
 ,
 
-stopMetronome() {
-  if (this.keepAliveOscillator) {
-    this.keepAliveOscillator.stop();
-    this.keepAliveOscillator.disconnect();
-    this.keepAliveOscillator = null;
-  }
-
-  this.isPlaying = false;
-  sessionStorage.setItem("isPlaying", "false");
-  clearTimeout(this.interval);
-  clearInterval(this.timerInterval);
-
-  this.elapsedTime = 0;
-  this.currentBeat = 1;
-  this.currentSubdivision = 0;
+    stopMetronome() {
+      if (this.keepAliveOscillator) {
+  this.keepAliveOscillator.stop();
+  this.keepAliveOscillator.disconnect();
+  this.keepAliveOscillator = null;
 }
-,
+      this.isPlaying = false;
+      sessionStorage.setItem("isPlaying", "false");
+      this.nextNoteTime = 0;
+      clearTimeout(this.interval);
+
+      clearInterval(this.timerInterval);
+      this.elapsedTime = 0;
+      this.currentBeat = 1;
+      this.currentSubdivision = 0;
+    },
 
     async scheduleNextBeat() {
   if (!this.isPlaying) return;

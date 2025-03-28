@@ -1,141 +1,106 @@
 <template>
   <Layout>
-    <video
-  ref="wakeLockVideo"
-  playsinline
-  muted
-  loop
-  autoplay
-  style="position: absolute; width: 1px; height: 1px; opacity: 0;"
->
-  <source
-    src="data:video/mp4;base64,AAAAHGZ0eXBNNAABAAAAAG1wNDFtcDQxaXNvbWF2YzEuNDFkYXNoAAAAAG1vb3YAAABsbXZoZAAAAAB8JY8AfCWPAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAABhpb2RzAAAAABCAgIAZAAAAAAABAQEAAAEAAABhc3RzAAAAAAEAAABhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAgAAAAEAAAAAAE1DRExBAAAAAAAfJY8AAABEUExhdmY1Mi4xLjEwMA==" 
-    type="video/mp4"
-/>
-</video>
-
     <div class="metronome-container pulsing-bg">
-      
-      <!-- Seconde card : Boutons de pulsation et de contrôle (Play/Pause) -->
       <div class="control-card">
         <div class="card-header">
           <div class="control-group">
-            <label><span v-if="!isEditingTempo" @click="isEditingTempo = true" class="editable-bpm">
-  {{ tempo }}
-</span>
-<input 
-  v-else 
-  type="number" 
-  v-model.number="tempo" 
-  @blur="isEditingTempo = false" 
-  @keyup.enter="isEditingTempo = false"
-  min="20" max="300"
-  class="bpm-input"
-/> BPM</label>
+            <label>
+              <span v-if="!isEditingTempo" @click="isEditingTempo = true" class="editable-bpm">
+                {{ metro.tempo }}
+              </span>
+              <input
+                v-else
+                type="number"
+                v-model.number="metro.tempo"
+                @blur="isEditingTempo = false"
+                @keyup.enter="isEditingTempo = false"
+                min="20" max="300"
+                class="bpm-input"
+              /> BPM
+            </label>
             <div class="tempo-control">
-              <button @click="decreaseTempo" class="tempo-arrow">
-                &#8592; <!-- Flèche gauche -->
-              </button>
-              <input type="range" v-model="tempo" min="20" max="300" step="1">
-              <button @click="increaseTempo" class="tempo-arrow">
-                &#8594; <!-- Flèche droite -->
-              </button>
+              <button @click="metro.decreaseTempo" class="tempo-arrow">&#8592;</button>
+              <input type="range" v-model="metro.tempo" min="20" max="300" step="1">
+              <button @click="metro.increaseTempo" class="tempo-arrow">&#8594;</button>
             </div>
           </div>
         </div>
+
         <div class="card-body">
           <div class="control-buttons">
-            <!-- Cercle de pulsation -->
             <div class="visualizer">
-              <div 
-                :class="{ beat: isBeating }" 
-                :style="{ backgroundColor: currentBeat === 1 ? 'darkred' : 'white' }"
+              <div
+                :class="{ beat: metro.isBeating }"
+                :style="{ backgroundColor: metro.currentBeat === 1 ? 'darkred' : 'white' }"
                 id="beatCircle"
               >
-                <span class="beat-number">{{ currentBeat }}</span> 
+                <span class="beat-number">{{ metro.currentBeat }}</span>
               </div>
             </div>
 
-            <!-- Icônes de démarrer et arrêter avec SVG -->
             <div class="controls">
-  <!-- Bouton PLAY toujours visible -->
-  <button @click="startMetronome" class="control-icon">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-      <path d="M8 5v14l11-7z"/>
-    </svg> <!-- Icône Play -->
-  </button>
- 
-  <!-- Bouton STOP toujours visible -->
-  <button @click="stopMetronome" class="control-icon stop-button">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-      <path d="M6 6h12v12H6z"/>
-    </svg> <!-- Icône Stop -->
-  </button>
-</div>
+              <button @click="metro.start" class="control-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </button>
+
+              <button @click="metro.stop" class="control-icon stop-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                  <path d="M6 6h12v12H6z"/>
+                </svg>
+              </button>
+            </div>
 
             <div class="control-group">
-              <select v-model="measure">
+              <select v-model="metro.measure">
                 <option v-for="num in [2, 3, 4, 5, 6, 7, 8]" :key="num" :value="num">
                   {{ num }}/4
                 </option>
               </select>
             </div>
           </div>
-     
-          <!-- Affichage du timer -->
+
           <div class="timer">
-  <p :style="{ color: timerColor }">{{ formattedTime }}</p>
-  <button @click="resetTimer" class="reset-icon">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-      <path d="M12 4V1L8 5l4 4V7c4 0 7 3 7 7s-3 7-7 7-7-3-7-7h2a5 5 0 1 0 5-5z"/>
-    </svg>
-  </button>
+            <p :style="{ color: metro.timerColor }">{{ metro.formattedTime }}</p>
+            <button @click="metro.resetTimer" class="reset-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                <path d="M12 4V1L8 5l4 4V7c4 0 7 3 7 7s-3 7-7 7-7-3-7-7h2a5 5 0 1 0 5-5z"/>
+              </svg>
+            </button>
           </div>
-          
 
           <div class="slider-group">
             <label class="swing-label">
-  Swing :
-  <span class="swing-value">
-    {{ Math.round(swingAmount * 100) }}%
-    <span 
-      class="swing-led" 
-      :class="getSwingLedColor"
-      :title="swingLabel"
-    ></span>
-  </span>
-</label>
-
-  <input 
-    type="range" 
-    v-model="swingAmount" 
-    min="0" 
-    max="1" 
-    step="0.05" 
-    :style="{ background: getSliderGradient(swingAmount) }"
-  >
-</div>
-
-
-
+              Swing :
+              <span class="swing-value">
+                {{ Math.round(metro.swingAmount * 100) }}%
+                <span
+                  class="swing-led"
+                  :class="metro.getSwingLedColor"
+                  :title="metro.swingLabel"
+                ></span>
+              </span>
+            </label>
+            <input type="range" v-model="metro.swingAmount" min="0" max="1" step="0.05"
+              :style="{ background: metro.getSliderGradient(metro.swingAmount) }"
+            >
+          </div>
         </div>
       </div>
 
-      <!-- Première card : Contrôles du Métronome et Mixage des Volumes -->
       <div class="metronome-card">
         <div class="card-body">
           <div class="control-container">
-            <!-- Colonne 1 : Contrôles Métronome -->
             <div class="control-column">
-              <!-- Subdivisions avec des icônes sous forme de tableau -->
               <div class="control-group">
                 <div class="subdivision-icons">
-                  <div 
-                    v-for="(sub, index) in subdivisions" 
-                    :key="index" 
+                  <div
+                    v-for="(sub, index) in metro.subdivisions"
+                    :key="index"
                     class="subdivision-icon"
-                    :class="{ selected: subdivision === sub.value }"
-                    @click="selectSubdivision(sub.value)"
+                    :class="{ selected: metro.subdivision === sub.value }"
+                    @click="metro.selectSubdivision(sub.value)"
                   >
                     <img :src="sub.icon" :alt="sub.label" />
                     <span>{{ sub.label }}</span>
@@ -144,54 +109,40 @@
               </div>
             </div>
 
-            <!-- Colonne 2 : Mixette -->
             <div class="mixing-column">
-      <!-- Mixette : Volume fort -->
+              <div class="slider-group">
+                <label>
+                  <input type="checkbox" v-model="metro.accentuateFirstBeat">
+                  Temps fort
+                </label>
+                <label>Clic :</label>
+                <input
+                  type="range"
+                  v-model="metro.volumeStrong"
+                  min="0" max="1" step="0.01"
+                  :style="{ background: metro.getSliderGradient(metro.volumeStrong) }"
+                >
+              </div>
 
-<div class="slider-group">
-  <div class="control-groupe">
-  <label>
-    <input type="checkbox" v-model="accentuateFirstBeat">
+              <div class="slider-group">
+                <label>Pulsation :</label>
+                <input
+                  type="range"
+                  v-model="metro.volumeWeak"
+                  min="0" max="1" step="0.01"
+                  :style="{ background: metro.getSliderGradient(metro.volumeWeak) }"
+                >
+              </div>
 
-    Temps fort
-    <span class="tooltip-icon" title="Accentuer le 1er temps de chaque mesure">❓</span>
-  </label>
-</div>
-
-
-
-
-  <label>Clic :</label>
-  <input 
-    type="range" 
-    v-model="volumeStrong" 
-    min="0" max="1" step="0.01"
-    :style="{ background: getSliderGradient(volumeStrong) }"
-  >
-</div>
-
-<!-- Volume faible -->
-<div class="slider-group">
-  <label>Pulsation :</label>
-  <input 
-    type="range" 
-    v-model="volumeWeak" 
-    min="0" max="1" step="0.01"
-    :style="{ background: getSliderGradient(volumeWeak) }"
-  >
-</div>
-
-<!-- Subdivision -->
-<div class="slider-group">
-  <label>Débit :</label>
-  <input 
-    type="range" 
-    v-model="volumeSub" 
-    min="0" max="1" step="0.01"
-    :style="{ background: getSliderGradient(volumeSub) }"
-  >
-</div>
-
+              <div class="slider-group">
+                <label>Débit :</label>
+                <input
+                  type="range"
+                  v-model="metro.volumeSub"
+                  min="0" max="1" step="0.01"
+                  :style="{ background: metro.getSliderGradient(metro.volumeSub) }"
+                >
+              </div>
             </div>
           </div>
         </div>
@@ -200,9 +151,11 @@
   </Layout>
 </template>
 
+
 <script>
 import Layout from "@/views/Layout.vue";
-import { useMetronomeStore } from "@/stores/metronome";
+
+import { useMetronomeStore } from "@/stores/metronome.js";
 
 const baseUrl = import.meta.env.MODE === "development" ? "/" : "/app/";
 
@@ -214,6 +167,7 @@ export default {
     return {
       tempo: 120,
       savedState: null,
+      metronome: null,
 
       measure: 4,
       subdivision: 1,
@@ -352,28 +306,34 @@ export default {
     },
 
     startMetronome() {
-  this.initAudioContext();         // 👈 TOUJOURS en premier
-  this.resumeAudioContext();
+      this.metronome = new Metronome(
+  this.audioContext,
+  this.soundBuffers,
+  this.tempo,
+  this.measure,
+  this.subdivision,
+  this.swingAmount,
+  {
+    strong: this.volumeStrong,
+    weak: this.volumeWeak,
+    sub: this.volumeSub
+  },
+  (beat, subdivision) => {
+    this.currentBeat = beat;
+    this.currentSubdivision = subdivision;
+    this.isBeating = true;
+    setTimeout(() => this.isBeating = false, 100);
+  }
+);
+this.metronome.start();
 
-  // 🎧 Hack oscillateur pour keep-alive iOS
-  this.keepAliveOscillator = this.audioContext.createOscillator();
-  const gain = this.audioContext.createGain();
-  gain.gain.value = 0.0001;
-  this.keepAliveOscillator.connect(gain);
-  gain.connect(this.audioContext.destination);
-  this.keepAliveOscillator.start();
-
-  this.isPlaying = true;
-  this.nextNoteTime = this.audioContext.currentTime + 0.1;
-
-  this.beatInterval = setInterval(() => {
-    this.scheduleNextBeat();
-  }, 25);
 }
 
 ,
 
 stopMetronome() {
+  if (this.metronome) this.metronome.stop();
+
   if (this.keepAliveOscillator) {
     this.keepAliveOscillator.stop();
     this.keepAliveOscillator.disconnect();
