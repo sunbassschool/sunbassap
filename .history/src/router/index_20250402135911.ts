@@ -27,7 +27,7 @@ import MesRessources from '@/views/MesRessources.vue';
 import Feedback from "@/views/Feedback.vue";
 import FeedBackProf from "@/views/FeedBackProf.vue";
 import GestionEleves from "@/views/GestionEleves.vue";
-import AdminFeedback from "@/views/AdminFeedback.vue";
+import GestionEleves from "@/views/GestionEleves.vue";
 
 // Importation des fonctions utiles
 import {
@@ -53,7 +53,7 @@ const router = createRouter({
     { path: "/forgot-password", name: "Forgotpassword", component: ForgotPassword },
     { path: "/Createplanning", name: "CreatePlanning", component: CreatePlanning, meta: { requiresAuth: true, role: "admin" } },
     { path: "/cours", name: "cours", component: Cours, meta: { requiresAuth: true, role: "admin" } },
-    { path: "/AdminFeedback", name: "AdminFeedback", component: AdminFeedback, meta: { requiresAuth: true, role: "admin" } },
+    { path: "/AdminFeedBack", name: "AdminFeedBack", component: AdminFeedBack, meta: { requiresAuth: true, role: "admin" } },
     { path: "/mon-espace", name: "mon-espace", component: MonEspace, meta: { requiresAuth: true } },
     { path: "/intro", name: "intro", component: IntroView },
     { path: "/Feedback", name: "Feedback", component: Feedback },

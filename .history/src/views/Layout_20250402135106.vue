@@ -86,7 +86,7 @@
 </router-link>
 <router-link v-if="isAdmin" to="/FeedBackProf" class="sidebar-link">
   <i class="bi bi-pencil-square"></i>
-  <span>FeedBackProf</span>
+  <span>Créer planning de l'élève</span>
 </router-link>
     <router-link v-if="isAdmin" to="/register-cursus" class="sidebar-link">
   <i class="bi bi-person-add"></i>

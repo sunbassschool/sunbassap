@@ -84,10 +84,6 @@
   <i class="bi bi-pencil-square"></i>
   <span>Créer planning de l'élève</span>
 </router-link>
-<router-link v-if="isAdmin" to="/FeedBackProf" class="sidebar-link">
-  <i class="bi bi-pencil-square"></i>
-  <span>FeedBackProf</span>
-</router-link>
     <router-link v-if="isAdmin" to="/register-cursus" class="sidebar-link">
   <i class="bi bi-person-add"></i>
   <span>Ajouter un élève</span>
@@ -196,16 +192,18 @@
   <i class="bi bi-play-circle"></i>
   <span>Prendre un cours</span>
 </a>
-<router-link v-if="isAdmin" to="/FeedBackProf" class="nav-link mon-espace">
+<router-link v-if="isAdmin" to="/FeedBackPROf" class="nav-link mon-espace">
   <i class="bi bi-pencil-square"></i>
-  <span>FeedBackProf</span>
+  <span>Créer le planning de l'élève</span>
 </router-link>
 <router-link v-if="isAdmin" to="/CreatePlanning" class="nav-link mon-espace">
   <i class="bi bi-pencil-square"></i>
   <span>Créer le planning de l'élève</span>
 </router-link>
-
-
+<router-link v-if="isAdmin" to="/FeedBackProf" class="nav-link mon-espace">
+  <i class="bi bi-pencil-square"></i>
+  <span>Feedbacks</span>
+</router-link>
 <router-link v-if="isAdmin" to="/register-cursus" class="nav-link mon-espace">
   <i class="bi bi-calendar-event"></i>
   <span>Ajouter un élève</span>
