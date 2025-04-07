@@ -741,9 +741,6 @@ h2 {
     padding: 8px;
     font-size: 0.9rem;
   }
-  .table-responsive {
-    max-height: calc(100vh - 170px); /* ex: 80 header + 70 footer + 20px de marge */
-  }
 }
 
 @media (max-width: 576px) {
@@ -754,18 +751,6 @@ h2 {
 }
 .container-xxl {
   padding-bottom: 50px; /* Ajoute un espace en bas pour éviter le rognage */
-}
-@media (max-width: 1024px) {
-  .container-xxl {
-    height: calc(100vh - 150px); /* Header 80px + Footer 70px */
-    overflow-y: auto;
-    padding-bottom: 0px; /* espace de respiration pour scroll */
-  }
-
-  .table-responsive {
-    max-height: none !important; /* Laisse le container gérer le scroll */
-    overflow-y: visible !important;
-  }
 }
 
 </style>

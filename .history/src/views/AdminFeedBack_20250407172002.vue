@@ -118,32 +118,20 @@
             {{ feedbackSentMessage }}
           </div>
         </div>
-        <h5 
-  class="text-white mb-3 d-flex align-items-center justify-content-between"
-  style="cursor: pointer; user-select: none;"
-  @click="showGlobalFeedbacks = !showGlobalFeedbacks"
->
-  📋 Historique global des feedbacks
-  <span class="ms-2">
-    <i :class="showGlobalFeedbacks ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
-  </span>
-</h5>
+  
+        <!-- 📋 Feedbacks existants -->
+        <div v-if="!feedbacks.length" class="text-light fst-italic mb-4">
+  Aucun feedback pour l’instant.
+</div>
+<div v-if="feedbacks.length">
 
-<!-- 💬 Liste des feedbacks -->
-<div v-if="showGlobalFeedbacks">
-  <div v-if="!feedbacks.length" class="text-light fst-italic mb-4">
-    Aucun feedback pour l’instant.
-  </div>
-
-  <div v-if="feedbacks.length">
     <div v-if="!selectedEleve" class="text-light fst-italic">
-      🔍 Sélectionne un élève pour afficher ses feedbacks.
-    </div>
+  🔍 Sélectionne un élève pour afficher ses feedbacks.
+</div>
 
-    <!-- Affiche ce titre uniquement si un élève est sélectionné -->
-    <h5 v-if="selectedEleve" class="text-white mb-3">
-      📋 Feedbacks pour {{ selectedEleve.prenom }}
-    </h5>
+            <h5 class="text-white mb-3">
+  📋 {{ selectedEleve ? `Feedbacks pour ${selectedEleve.prenom}` : "Historique global des feedbacks" }}
+</h5>
 
           <div v-for="fb in feedbacks" :key="fb.ID" class="bg-dark text-light border rounded p-3 mb-3">
   <!-- 🎖️ Auteur + Date -->
@@ -158,8 +146,7 @@
 
 
 
-<small class="text-light">{{ formatDate(fb.Date_Publication) }}</small>
-
+    <small class="text-muted">{{ formatDate(fb.Date_Publication) }}</small>
   </div>
 
   <!-- 💬 Message -->
@@ -219,9 +206,18 @@
 </div>
 
         </div>
+        <h5 
+  class="text-white mb-3 d-flex align-items-center justify-content-between"
+  style="cursor: pointer; user-select: none;"
+  @click="showGlobalFeedbacks = !showGlobalFeedbacks"
+>
+  📋 Historique global des feedbacks
+  <span class="ms-2">
+    <i :class="showGlobalFeedbacks ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
+  </span>
+</h5>
 
 
-</div>
       </div>
     </Layout>
   </template>

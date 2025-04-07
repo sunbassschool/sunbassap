@@ -115,8 +115,6 @@ data() {
     audioContext: null,
     nextNoteTime: 0,
     keepAwakeRAF: null,
-    silentOsc: null, // 👈 ici
-
     baseUrl: import.meta.env.MODE === "development" ? "/" : "/app/", // 👈 ici
 
     timerInterval: null,
@@ -279,35 +277,20 @@ methods: {
       await this.loadSounds();
     }
   },
-  async initAudioContext() {
-  if (!this.audioContext) {
-    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    await this.loadSounds();
-
-    // 🌀 Oscillateur silencieux
-    this.silentOsc = this.audioContext.createOscillator();
-    this.silentOsc.frequency.value = 0.0001; // fréquence inaudible
-    const gainNode = this.audioContext.createGain();
-    gainNode.gain.value = 0; // inaudible
-    this.silentOsc.connect(gainNode);
-    gainNode.connect(this.audioContext.destination);
-    this.silentOsc.start();
-    console.log("🎛️ Oscillateur inaudible démarré");
-  }
-}
-,
-  startKeepAwake() {
+  keepAwakeLoop() {
+  this.keepAwakeRAF = requestAnimationFrame(this.keepAwakeLoop);
+},
+startKeepAwake() {
   if (!this.keepAwakeRAF) {
-    this.keepAwakeRAF = setInterval(() => {
-      console.log("⏱️ Boucle anti-sommeil active");
-    }, 1000);
+    this.keepAwakeLoop();
+    console.log("🌀 Boucle de réveil via requestAnimationFrame démarrée");
   }
 },
 stopKeepAwake() {
   if (this.keepAwakeRAF) {
-    clearInterval(this.keepAwakeRAF);
+    cancelAnimationFrame(this.keepAwakeRAF);
     this.keepAwakeRAF = null;
-    console.log("🛑 Boucle anti-sommeil stoppée");
+    console.log("🛑 Boucle de réveil stoppée");
   }
 },
 

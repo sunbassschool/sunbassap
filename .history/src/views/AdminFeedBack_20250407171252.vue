@@ -4,22 +4,9 @@
         <h2 class="text-white mb-4">📝 Feedbacks Admin</h2>
 <!-- 🔔 Feedbacks non lus -->
 <div v-if="getUnreadFeedbacks().length" class="unread-topics mb-4">
-  <h4 
-  class="text-warning mb-2"
-  style="cursor: pointer; user-select: none;"
-  @click="showUnreadFeedbacks = !showUnreadFeedbacks"
->
-  🔔 Feedbacks non lus ({{ getUnreadFeedbacks().length }})
-  <span class="ms-2">
-    <i :class="showUnreadFeedbacks ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
-  </span>
-</h4>
+  <h4 class="text-warning mb-2">🔔 Feedbacks non lus ({{ getUnreadFeedbacks().length }})</h4>
 
-<div 
-  v-if="getUnreadFeedbacks().length && showUnreadFeedbacks" 
-  class="scroll-zone border border-secondary rounded bg-dark"
->
-
+  <div class="scroll-zone border border-secondary rounded bg-dark">
     <div
       v-for="fb in getUnreadFeedbacks()"
       :key="fb.ID"
@@ -118,32 +105,20 @@
             {{ feedbackSentMessage }}
           </div>
         </div>
-        <h5 
-  class="text-white mb-3 d-flex align-items-center justify-content-between"
-  style="cursor: pointer; user-select: none;"
-  @click="showGlobalFeedbacks = !showGlobalFeedbacks"
->
-  📋 Historique global des feedbacks
-  <span class="ms-2">
-    <i :class="showGlobalFeedbacks ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
-  </span>
-</h5>
+  
+        <!-- 📋 Feedbacks existants -->
+        <div v-if="!feedbacks.length" class="text-light fst-italic mb-4">
+  Aucun feedback pour l’instant.
+</div>
+<div v-if="feedbacks.length">
 
-<!-- 💬 Liste des feedbacks -->
-<div v-if="showGlobalFeedbacks">
-  <div v-if="!feedbacks.length" class="text-light fst-italic mb-4">
-    Aucun feedback pour l’instant.
-  </div>
-
-  <div v-if="feedbacks.length">
     <div v-if="!selectedEleve" class="text-light fst-italic">
-      🔍 Sélectionne un élève pour afficher ses feedbacks.
-    </div>
+  🔍 Sélectionne un élève pour afficher ses feedbacks.
+</div>
 
-    <!-- Affiche ce titre uniquement si un élève est sélectionné -->
-    <h5 v-if="selectedEleve" class="text-white mb-3">
-      📋 Feedbacks pour {{ selectedEleve.prenom }}
-    </h5>
+            <h5 class="text-white mb-3">
+  📋 {{ selectedEleve ? `Feedbacks pour ${selectedEleve.prenom}` : "Historique global des feedbacks" }}
+</h5>
 
           <div v-for="fb in feedbacks" :key="fb.ID" class="bg-dark text-light border rounded p-3 mb-3">
   <!-- 🎖️ Auteur + Date -->
@@ -158,8 +133,7 @@
 
 
 
-<small class="text-light">{{ formatDate(fb.Date_Publication) }}</small>
-
+    <small class="text-muted">{{ formatDate(fb.Date_Publication) }}</small>
   </div>
 
   <!-- 💬 Message -->
@@ -219,9 +193,8 @@
 </div>
 
         </div>
+        <h5 class="text-white mb-3">📋 Historique global des feedbacks</h5>
 
-
-</div>
       </div>
     </Layout>
   </template>
@@ -239,13 +212,7 @@ export default {
   data() {
     return {
       eleves: [],
-      showUnread: false,
-      showGlobalFeedbacks: true,
-
-      showGlobal: false,
       feedbacksAll: [], // historique complet
-      showUnreadFeedbacks: false, // 🔁 toggle accordéon
-
       openedFeedbacks: [], // contient les ID des feedbacks "ouverts"
       selectedEleveEmail: "",
 

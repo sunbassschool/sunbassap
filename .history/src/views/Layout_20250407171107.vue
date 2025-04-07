@@ -1586,9 +1586,6 @@ body, html {
   .page-content {
     margin-left: 0; /* ✅ Plus de sidebar en mobile, donc pas de décalage */
     width: 100%; /* Pleine largeur */
-    height: calc(100vh - 150px); /* Header 80px + Footer 70px */
-    overflow-y: auto;
-    padding-bottom: 100px; /* Marge de confort en bas */
   }
   .navbar-container {
     height: 70px; /* Augmenté pour plus de confort */
@@ -1616,6 +1613,25 @@ body, html {
  
 
 }
+@media (max-width: 768px) {
+  .page-content {
+    height: calc(100vh - 150px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
 
+@media (max-width: 768px) {
+  .container {
+    height: calc(100vh - 150px); /* Header 80px + Footer 70px */
+    overflow-y: auto;
+    padding-bottom: 100px; /* Marge de confort en bas */
+  }
+
+  .scroll-zone {
+    max-height: none !important; /* Laisse le container gérer le scroll */
+    overflow-y: visible !important;
+  }
+}
 
 </style>

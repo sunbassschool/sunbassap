@@ -128,22 +128,21 @@
     <i :class="showGlobalFeedbacks ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
   </span>
 </h5>
-
-<!-- 💬 Liste des feedbacks -->
-<div v-if="showGlobalFeedbacks">
+        <!-- 📋 Feedbacks existants -->
+        <div v-if="showGlobalFeedbacks">
   <div v-if="!feedbacks.length" class="text-light fst-italic mb-4">
     Aucun feedback pour l’instant.
   </div>
+  <div v-show="feedbacks.length">
 
-  <div v-if="feedbacks.length">
-    <div v-if="!selectedEleve" class="text-light fst-italic">
-      🔍 Sélectionne un élève pour afficher ses feedbacks.
-    </div>
+    <!-- le reste ne bouge pas -->
 
-    <!-- Affiche ce titre uniquement si un élève est sélectionné -->
-    <h5 v-if="selectedEleve" class="text-white mb-3">
-      📋 Feedbacks pour {{ selectedEleve.prenom }}
-    </h5>
+
+
+
+            <h5 class="text-white mb-3">
+  📋 {{ selectedEleve ? `Feedbacks pour ${selectedEleve.prenom}` : "Historique global des feedbacks" }}
+</h5>
 
           <div v-for="fb in feedbacks" :key="fb.ID" class="bg-dark text-light border rounded p-3 mb-3">
   <!-- 🎖️ Auteur + Date -->
@@ -158,8 +157,7 @@
 
 
 
-<small class="text-light">{{ formatDate(fb.Date_Publication) }}</small>
-
+    <small class="text-muted">{{ formatDate(fb.Date_Publication) }}</small>
   </div>
 
   <!-- 💬 Message -->

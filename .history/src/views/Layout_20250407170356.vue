@@ -1169,7 +1169,7 @@ body, html {
   min-height: 100vh;
   transition: margin-left 0.3s ease-in-out;
   padding-top: 50px;  /* ✅ hauteur du header */
-  padding-bottom: 50px; /* ✅ hauteur du footer + un petit buffer */
+  padding-bottom: 100px; /* ✅ hauteur du footer + un petit buffer */
   box-sizing: border-box;
   /* ✅ Décale le contenu à droite de la largeur de la sidebar */
  
@@ -1475,8 +1475,6 @@ body, html {
     width: 100vw !important; /* ✅ Forcer la pleine largeur */
     max-width: 100vw !important; /* ✅ Empêcher toute limitation */
     padding: 0 !important; /* ✅ Supprimer les marges internes */
-    padding-top: 80px;
-    padding-bottom: 90px;
   }
 }
 
@@ -1586,9 +1584,6 @@ body, html {
   .page-content {
     margin-left: 0; /* ✅ Plus de sidebar en mobile, donc pas de décalage */
     width: 100%; /* Pleine largeur */
-    height: calc(100vh - 150px); /* Header 80px + Footer 70px */
-    overflow-y: auto;
-    padding-bottom: 100px; /* Marge de confort en bas */
   }
   .navbar-container {
     height: 70px; /* Augmenté pour plus de confort */

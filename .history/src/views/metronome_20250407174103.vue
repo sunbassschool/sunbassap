@@ -280,7 +280,6 @@ function startMetronome() {
 
 
 function stopMetronome() {
-  metronome.stopMetronome(); // 🔕 release les verrous
   metronome.isPlaying = false;
 }
 

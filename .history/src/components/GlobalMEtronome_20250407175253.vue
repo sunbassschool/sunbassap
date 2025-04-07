@@ -79,27 +79,6 @@
 
     </div>
   </div>
-  <audio
-  ref="silentAudio"
-  :src="`${baseUrl}assets/audio/silence.mp3`"
-  loop
-  playsinline
-  autoplay
-  style="display: none;"
-></audio>
-<video 
-  ref="silentVideo" 
-  :src="`${baseUrl}assets/video/silence-video.mp4`"
-  autoplay 
-  loop 
-  muted 
-  playsinline 
-  style="display: none;"
-></video>
-
-
-
-
 </template>
 
 <script>
@@ -114,10 +93,6 @@ data() {
     isPlaying: false,
     audioContext: null,
     nextNoteTime: 0,
-    keepAwakeRAF: null,
-    silentOsc: null, // 👈 ici
-
-    baseUrl: import.meta.env.MODE === "development" ? "/" : "/app/", // 👈 ici
 
     timerInterval: null,
     beatInterval: null,
@@ -230,19 +205,7 @@ mounted() {
   if (savedMeter) this.selectedMeter = savedMeter;
   if (savedDisable !== null) this.disableStrongBeat = savedDisable === "true";
 
-  document.addEventListener('visibilitychange', async () => {
-    if (document.visibilityState === 'visible') {
-      const context = this.audioContext;
-      if (context && context.state === 'suspended') {
-        try {
-          await context.resume();
-          console.log("🔊 AudioContext repris !");
-        } catch (err) {
-          console.error("⚠️ Erreur AudioContext resume :", err);
-        }
-      }
-    }
-  });
+
   // 🔁 Synchronise lecture
   this.$watch(() => this.metronome.isPlaying, (val) => {
     val ? this.startMetronome() : this.stopMetronome();
@@ -279,38 +242,6 @@ methods: {
       await this.loadSounds();
     }
   },
-  async initAudioContext() {
-  if (!this.audioContext) {
-    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    await this.loadSounds();
-
-    // 🌀 Oscillateur silencieux
-    this.silentOsc = this.audioContext.createOscillator();
-    this.silentOsc.frequency.value = 0.0001; // fréquence inaudible
-    const gainNode = this.audioContext.createGain();
-    gainNode.gain.value = 0; // inaudible
-    this.silentOsc.connect(gainNode);
-    gainNode.connect(this.audioContext.destination);
-    this.silentOsc.start();
-    console.log("🎛️ Oscillateur inaudible démarré");
-  }
-}
-,
-  startKeepAwake() {
-  if (!this.keepAwakeRAF) {
-    this.keepAwakeRAF = setInterval(() => {
-      console.log("⏱️ Boucle anti-sommeil active");
-    }, 1000);
-  }
-},
-stopKeepAwake() {
-  if (this.keepAwakeRAF) {
-    clearInterval(this.keepAwakeRAF);
-    this.keepAwakeRAF = null;
-    console.log("🛑 Boucle anti-sommeil stoppée");
-  }
-},
-
   async loadSounds() {
     const soundUrls = {
       strong: `${baseUrl}assets/audio/strong-beat.wav`,
@@ -335,71 +266,48 @@ this.timerInterval = setInterval(() => this.elapsedTime++, 1000);
     this.timerInterval = null;
   },
   startMetronome() {
-  // 🎧 1. Lecture immédiate du fichier silence.mp3 pour activer la session audio sur iOS
-  const silent = this.$refs.silentAudio;
-  if (silent) {
-    silent.play().then(() => {
-      console.log("🎧 Audio fantôme (silence.mp3) lancé pour AVSession");
-    }).catch(err => {
-      console.warn("⚠️ Impossible de jouer l'audio fantôme :", err);
-    });
-  }
+this.initAudioContext();
 
-  // 🎥 2. Lecture d'une vidéo silencieuse pour maintenir la session AV (spécial PWA iOS)
-  const video = this.$refs.silentVideo;
-  if (video) {
-    video.play().then(() => {
-      console.log("🎥 Vidéo silencieuse lancée ✅");
-    }).catch(err => {
-      console.warn("⚠️ Erreur lecture vidéo silencieuse :", err);
-    });
-  }
+if (this.beatInterval) clearInterval(this.beatInterval);
 
-  // 🎛️ 3. Initialiser le contexte audio
-  this.initAudioContext();
+// Bien démarrer à 0, pas encore joué
+this.metronome.currentBeat = 0;
+this.metronome.currentSubdivision = 1;
 
-  // 🧼 4. Nettoyage ancien interval
-  if (this.beatInterval) clearInterval(this.beatInterval);
+this.nextNoteTime = this.audioContext.currentTime;
 
-  // 🔄 5. Réinitialisation du beat
-  this.metronome.currentBeat = 0;
-  this.metronome.currentSubdivision = 1;
-  this.nextNoteTime = this.audioContext.currentTime;
+this.metronome.isPlaying = true;
+this.isPlaying = true;
+this.metronome.startTimer();
 
-  // 🚀 6. Mise en marche
-  this.metronome.isPlaying = true;
-  this.isPlaying = true;
-  this.metronome.startTimer();
-  this.beatInterval = setInterval(this.scheduleBeat, 25);
-
-  // 🔁 7. Boucle JS anti-sommeil
-  this.startKeepAwake();
+this.beatInterval = setInterval(this.scheduleBeat, 25);
 }
+
+
 
 
 ,
 triggerBeatPulse() {
-  this.isBeating = true;
-  setTimeout(() => {
-    this.isBeating = false;
-  }, 100);
-},
-
+this.isBeating = true;
+setTimeout(() => {
+  this.isBeating = false;
+}, 100); // durée du flash
+}
+,
 stopMetronome() {
-  console.log("🛑 Stop appelé");
+console.log("🛑 Stop appelé");
 
-  clearInterval(this.beatInterval);
-  this.beatInterval = null;
+clearInterval(this.beatInterval);
+this.beatInterval = null;
 
-  this.metronome.stopTimer();
-  this.isPlaying = false;
-  this.metronome.isPlaying = false;
+this.metronome.stopTimer();
+this.isPlaying = false;
+this.metronome.isPlaying = false;
 
-  this.metronome.currentBeat = 1;
-  this.metronome.currentSubdivision = 1;
+this.metronome.currentBeat = 1;
+this.metronome.currentSubdivision = 1;
 
-  this.nextNoteTime = 0;
-  this.stopKeepAwake(); // 🛑 STOPPE BOUCLE
+this.nextNoteTime = 0; // ✅ reset planning audio
 }
 
 
@@ -479,7 +387,20 @@ this.playSound(buffer, time + swingDelay, volume);
     gainNode.connect(this.audioContext.destination);
     source.start(time);
   }
-}
+};
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible') {
+    const context = yourMetronomeAudioContext; // remplace par ta référence
+    if (context && context.state === 'suspended') {
+      try {
+        await context.resume();
+        console.log("🔊 AudioContext repris !");
+      } catch (err) {
+        console.error("⚠️ Erreur AudioContext resume :", err);
+      }
+    }
+  }
+});
 
 };
 </script>

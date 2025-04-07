@@ -79,25 +79,15 @@
 
     </div>
   </div>
-  <audio
-  ref="silentAudio"
-  :src="`${baseUrl}assets/audio/silence.mp3`"
-  loop
-  playsinline
-  autoplay
-  style="display: none;"
-></audio>
-<video 
-  ref="silentVideo" 
-  :src="`${baseUrl}assets/video/silence-video.mp4`"
-  autoplay 
+  <audio 
+  ref="silentAudio" 
+  :src="`${baseUrl}assets/audio/silence.mp3`" 
   loop 
   muted 
   playsinline 
-  style="display: none;"
-></video>
-
-
+  autoplay 
+  style="display: none;">
+</audio>
 
 
 </template>
@@ -115,9 +105,6 @@ data() {
     audioContext: null,
     nextNoteTime: 0,
     keepAwakeRAF: null,
-    silentOsc: null, // 👈 ici
-
-    baseUrl: import.meta.env.MODE === "development" ? "/" : "/app/", // 👈 ici
 
     timerInterval: null,
     beatInterval: null,
@@ -279,35 +266,20 @@ methods: {
       await this.loadSounds();
     }
   },
-  async initAudioContext() {
-  if (!this.audioContext) {
-    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    await this.loadSounds();
-
-    // 🌀 Oscillateur silencieux
-    this.silentOsc = this.audioContext.createOscillator();
-    this.silentOsc.frequency.value = 0.0001; // fréquence inaudible
-    const gainNode = this.audioContext.createGain();
-    gainNode.gain.value = 0; // inaudible
-    this.silentOsc.connect(gainNode);
-    gainNode.connect(this.audioContext.destination);
-    this.silentOsc.start();
-    console.log("🎛️ Oscillateur inaudible démarré");
-  }
-}
-,
-  startKeepAwake() {
+  keepAwakeLoop() {
+  this.keepAwakeRAF = requestAnimationFrame(this.keepAwakeLoop);
+},
+startKeepAwake() {
   if (!this.keepAwakeRAF) {
-    this.keepAwakeRAF = setInterval(() => {
-      console.log("⏱️ Boucle anti-sommeil active");
-    }, 1000);
+    this.keepAwakeLoop();
+    console.log("🌀 Boucle de réveil via requestAnimationFrame démarrée");
   }
 },
 stopKeepAwake() {
   if (this.keepAwakeRAF) {
-    clearInterval(this.keepAwakeRAF);
+    cancelAnimationFrame(this.keepAwakeRAF);
     this.keepAwakeRAF = null;
-    console.log("🛑 Boucle anti-sommeil stoppée");
+    console.log("🛑 Boucle de réveil stoppée");
   }
 },
 
@@ -345,37 +317,26 @@ this.timerInterval = setInterval(() => this.elapsedTime++, 1000);
     });
   }
 
-  // 🎥 2. Lecture d'une vidéo silencieuse pour maintenir la session AV (spécial PWA iOS)
-  const video = this.$refs.silentVideo;
-  if (video) {
-    video.play().then(() => {
-      console.log("🎥 Vidéo silencieuse lancée ✅");
-    }).catch(err => {
-      console.warn("⚠️ Erreur lecture vidéo silencieuse :", err);
-    });
-  }
-
-  // 🎛️ 3. Initialiser le contexte audio
+  // 🎛️ 2. Initialiser le contexte audio
   this.initAudioContext();
 
-  // 🧼 4. Nettoyage ancien interval
+  // 🧼 3. Nettoyage ancien interval
   if (this.beatInterval) clearInterval(this.beatInterval);
 
-  // 🔄 5. Réinitialisation du beat
+  // 🔄 4. Réinitialisation du beat
   this.metronome.currentBeat = 0;
   this.metronome.currentSubdivision = 1;
   this.nextNoteTime = this.audioContext.currentTime;
 
-  // 🚀 6. Mise en marche
+  // 🚀 5. Mise en marche
   this.metronome.isPlaying = true;
   this.isPlaying = true;
   this.metronome.startTimer();
   this.beatInterval = setInterval(this.scheduleBeat, 25);
 
-  // 🔁 7. Boucle JS anti-sommeil
+  // 🔁 6. Boucle JS anti-sommeil
   this.startKeepAwake();
 }
-
 
 ,
 triggerBeatPulse() {

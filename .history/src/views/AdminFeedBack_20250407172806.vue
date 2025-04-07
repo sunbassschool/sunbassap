@@ -158,8 +158,7 @@
 
 
 
-<small class="text-light">{{ formatDate(fb.Date_Publication) }}</small>
-
+    <small class="text-muted">{{ formatDate(fb.Date_Publication) }}</small>
   </div>
 
   <!-- 💬 Message -->

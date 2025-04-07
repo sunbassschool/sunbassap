@@ -267,15 +267,6 @@ body {
   max-width: 100vw;
   overflow-x: hidden;
 }
-#sw-update-toast {
-  max-width: 95vw;
-  box-sizing: border-box;
-  word-wrap: break-word;
-}
-* {
-  max-width: 100vw;
-  box-sizing: border-box;
-}
 
   @media (max-width: 768px) {
     .table th, .table td {

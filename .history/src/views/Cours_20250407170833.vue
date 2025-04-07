@@ -759,7 +759,7 @@ h2 {
   .container-xxl {
     height: calc(100vh - 150px); /* Header 80px + Footer 70px */
     overflow-y: auto;
-    padding-bottom: 0px; /* espace de respiration pour scroll */
+    padding-bottom: 50px; /* espace de respiration pour scroll */
   }
 
   .table-responsive {

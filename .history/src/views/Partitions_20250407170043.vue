@@ -272,10 +272,6 @@ body {
   box-sizing: border-box;
   word-wrap: break-word;
 }
-* {
-  max-width: 100vw;
-  box-sizing: border-box;
-}
 
   @media (max-width: 768px) {
     .table th, .table td {
