@@ -210,17 +210,6 @@ export default {
     }, 300); // Toutes les 300ms, la barre progresse
   },
   async submitForm() {
-  // Réinitialisation des messages
-  this.errorMessage = "";
-  this.message = "";
-
-  // Vérification des champs requis
-  if (!this.email || !this.prenom || !this.codeAcces || !this.confirmCodeAcces) {
-    this.errorMessage = "Tous les champs sont obligatoires.";
-    return;
-  }
-
-  // Vérification correspondance des mots de passe
   if (this.codeAcces !== this.confirmCodeAcces) {
     this.confirmPasswordError = "Les mots de passe ne correspondent pas.";
     return;
@@ -230,16 +219,11 @@ export default {
 
   this.isLoading = true;
   this.startProgressBar();
-
-  // Log des données
-  console.log("Paramètres envoyés :", {
-    email: this.email,
-    prenom: this.prenom,
-    codeAcces: this.codeAcces,
-  });
+  this.errorMessage = "";
+  this.message = "";
 
   try {
-    const baseURL = "https://script.google.com/macros/s/AKfycbz0GbA1Tk5pUKyk2cXoVGkXXOtGHNKU-KoD-wK1EYRrxAETtGXxuiyqcWdayPUBQfKk_A/exec";
+    const baseURL = "https://script.google.com/macros/s/AKfycbwCrvZUTP9W0dGCzgMO_wdfgQWXeke3xAWLiXIIR8TdT57IWE3V90xj_E2JZOxrtx4n2A/exec";
     const query = `route=register&email=${encodeURIComponent(this.email)}&prenom=${encodeURIComponent(this.prenom)}&codeAcces=${encodeURIComponent(this.codeAcces)}`;
     const fullURL = `${baseURL}?${query}`;
     const finalURL = `https://cors-proxy-sbs.vercel.app/api/proxy?url=${encodeURIComponent(fullURL)}`;
@@ -247,7 +231,7 @@ export default {
     const response = await fetch(finalURL, { method: "GET" });
     const result = await response.json();
 
-    console.log("Résultat de l'inscription :", result);
+    console.log("Résultat de l'inscription :", result); // Journalisation
 
     if (result.success) {
       this.message = "Inscription réussie !";
@@ -259,7 +243,6 @@ export default {
         id: result.id
       }));
 
-      // Réinitialise le formulaire
       this.email = "";
       this.prenom = "";
       this.codeAcces = "";
@@ -268,7 +251,7 @@ export default {
 
       setTimeout(() => this.$router.push('/mon-espace'), 1500);
     } else {
-      this.errorMessage = result.message || "Erreur lors de l'inscription.";
+      this.errorMessage = "Erreur lors de l'inscription.";
       this.message = "";
     }
 
@@ -284,7 +267,6 @@ export default {
     }, 500);
   }
 }
-
 
 ,
   },

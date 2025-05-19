@@ -239,7 +239,7 @@ export default {
   });
 
   try {
-    const baseURL = "https://script.google.com/macros/s/AKfycbz0GbA1Tk5pUKyk2cXoVGkXXOtGHNKU-KoD-wK1EYRrxAETtGXxuiyqcWdayPUBQfKk_A/exec";
+    const baseURL = "https://script.google.com/macros/s/AKfycbxlqsXbWcn_dgD32U4Hem0DfrwN9DB0vzBr_02mNAe2wAVIcw6fXDU1Mqx93Bqw2AL1hw/exec";
     const query = `route=register&email=${encodeURIComponent(this.email)}&prenom=${encodeURIComponent(this.prenom)}&codeAcces=${encodeURIComponent(this.codeAcces)}`;
     const fullURL = `${baseURL}?${query}`;
     const finalURL = `https://cors-proxy-sbs.vercel.app/api/proxy?url=${encodeURIComponent(fullURL)}`;

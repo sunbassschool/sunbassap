@@ -209,57 +209,35 @@ export default {
       }
     }, 300); // Toutes les 300ms, la barre progresse
   },
-  async submitForm() {
-  // Réinitialisation des messages
-  this.errorMessage = "";
-  this.message = "";
-
-  // Vérification des champs requis
-  if (!this.email || !this.prenom || !this.codeAcces || !this.confirmCodeAcces) {
-    this.errorMessage = "Tous les champs sont obligatoires.";
-    return;
-  }
-
-  // Vérification correspondance des mots de passe
+    async submitForm() {
   if (this.codeAcces !== this.confirmCodeAcces) {
     this.confirmPasswordError = "Les mots de passe ne correspondent pas.";
     return;
   } else {
     this.confirmPasswordError = "";
   }
-
-  this.isLoading = true;
-  this.startProgressBar();
-
-  // Log des données
-  console.log("Paramètres envoyés :", {
-    email: this.email,
-    prenom: this.prenom,
-    codeAcces: this.codeAcces,
-  });
-
+  this.isLoading = true; // ✅ Active le chargement AVANT l'appel API
+  this.startProgressBar(); // Démarre la barre de progression
   try {
-    const baseURL = "https://script.google.com/macros/s/AKfycbz0GbA1Tk5pUKyk2cXoVGkXXOtGHNKU-KoD-wK1EYRrxAETtGXxuiyqcWdayPUBQfKk_A/exec";
-    const query = `route=register&email=${encodeURIComponent(this.email)}&prenom=${encodeURIComponent(this.prenom)}&codeAcces=${encodeURIComponent(this.codeAcces)}`;
-    const fullURL = `${baseURL}?${query}`;
-    const finalURL = `https://cors-proxy-sbs.vercel.app/api/proxy?url=${encodeURIComponent(fullURL)}`;
+    const baseURL = "https://cors-proxy-sbs.vercel.app/api/proxy?url=https://script.google.com/macros/s/AKfycbwCrvZUTP9W0dGCzgMO_wdfgQWXeke3xAWLiXIIR8TdT57IWE3V90xj_E2JZOxrtx4n2A/exec";
+const query = `route=register&email=${encodeURIComponent(this.email)}&prenom=${encodeURIComponent(this.prenom)}&codeAcces=${encodeURIComponent(this.codeAcces)}`;
+const fullURL = `${baseURL}?${query}`;
+const finalURL = `https://cors-proxy-sbs.vercel.app/api/proxy?url=${encodeURIComponent(fullURL)}`;
 
-    const response = await fetch(finalURL, { method: "GET" });
+const response = await fetch(finalURL, { method: "GET" });
+
+
     const result = await response.json();
-
-    console.log("Résultat de l'inscription :", result);
 
     if (result.success) {
       this.message = "Inscription réussie !";
-      this.errorMessage = "";
-
       localStorage.setItem("user", JSON.stringify({
         email: this.email,
         prenom: this.prenom,
         id: result.id
       }));
 
-      // Réinitialise le formulaire
+      // Réinitialisation du formulaire
       this.email = "";
       this.prenom = "";
       this.codeAcces = "";
@@ -268,24 +246,18 @@ export default {
 
       setTimeout(() => this.$router.push('/mon-espace'), 1500);
     } else {
-      this.errorMessage = result.message || "Erreur lors de l'inscription.";
-      this.message = "";
+      this.message = "Erreur lors de l'inscription.";
     }
-
   } catch (error) {
-    console.error("Erreur réseau ou serveur :", error);
-    this.errorMessage = "Impossible de contacter le serveur.";
-    this.message = "";
-  } finally {
-    this.progress = 100;
-    setTimeout(() => {
-      this.isLoading = false;
-      this.progress = 0;
-    }, 500);
-  }
-}
-
-
+    console.error("Erreur :", error);
+    this.message = "Impossible de contacter le serveur.";
+  }finally {
+      this.progress = 100; // Termine la barre de progression
+      setTimeout(() => {
+        this.isLoading = false;
+        this.progress = 0; // Réinitialisation après la fin
+      }, 500); // Petite pause avant de cacher la barre
+    }}
 ,
   },
 };
